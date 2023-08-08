@@ -14,6 +14,15 @@
 }
 
 #ifndef NDEBUG
+#define LOG_INFO(component, msg) \
+{                                                                \
+    std::cerr << "[" << #component << "] " << msg << "\n";  \
+}
+#else
+#define LOG_INFO(component, msg)
+#endif  // NDEBUG
+
+#ifndef NDEBUG
 #define LOG_DEBUG(component, msg) \
 {                                                                \
     std::cerr << "[" << #component << "] " << msg << std::endl;  \

@@ -183,13 +183,13 @@ namespace k3s {
             
             auto newstamp = std::chrono::steady_clock::now();
             auto diff = std::chrono::duration_cast<std::chrono::microseconds>(newstamp - timestamp_).count();
-            std::cout << "Spent in GC = " << diff << "[us]\n";
+            LOG_INFO(GC, "Spent in GC = " << diff << "[us]");
             timestamp_ = newstamp;
         }
     }
 
 template class GCRegion<251658240ul, 16777216ul>;
-// For some reasons, in release builds `GCRegion` instantiation is not enough:
-template class RegionsPool<251658240ul, 786432ul, 16ul, 16777216ul>;
+// For some reasons, in release builds `GCRegion` instantiation may not be enough:
+//template class RegionsPool<251658240ul, 1, 4, 16777216ul>;
 
 }  // namespace k3s

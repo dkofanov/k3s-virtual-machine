@@ -106,7 +106,7 @@ public:
         if (stages_stack_.size() == 0) {
             auto newstamp = std::chrono::steady_clock::now();
             auto diff = std::chrono::duration_cast<std::chrono::microseconds>(newstamp - timestamp_).count();
-            std::cout << "Code executed for = " << diff << "[us]\n";
+            LOG_INFO(GC, "Code executed for = " << diff << "[us]");
             timestamp_ = newstamp;
         }
         stages_stack_.emplace_back();

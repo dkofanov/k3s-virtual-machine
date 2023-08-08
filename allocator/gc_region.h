@@ -140,7 +140,7 @@ public:
     void EndSequentAllocations();
 
     static constexpr size_t TENURED_SIZE = SIZE / 4;
-    static constexpr size_t SURVIVORS_N = 16;
+    static constexpr size_t SURVIVORS_N = 2;
     static constexpr size_t SURVIVORS_SIZE = (SIZE - TENURED_SIZE) / SURVIVORS_N;
     static constexpr size_t SURVIVORS_START_PTR = START_PTR;
     using RegionsPoolT = RegionsPool<SURVIVORS_START_PTR, SURVIVORS_SIZE, SURVIVORS_N, SIZE>;
