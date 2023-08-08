@@ -31,8 +31,9 @@
 #define LOG_DEBUG(component, msg)
 #endif  // NDEBUG
 
-
 #define BIT_CAST(type, var) \
+
+#define ALWAYS_INLINE __attribute__((always_inline))
 
 template <typename T1, typename T2>
 T1 bit_cast(T2 val) {

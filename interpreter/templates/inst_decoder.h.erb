@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include "common/macro.h"
 #include "interpreter/bytecode_instruction.h"
 
 namespace k3s {
@@ -43,14 +44,16 @@ public:
         return immediate_operand_;
     }
 
-    size_t DecodeAndResolve(const BytecodeInstruction &inst, const Interpreter &interp);
+    inline ALWAYS_INLINE size_t DecodeAndResolve(const BytecodeInstruction &inst, const Interpreter &interp);
 
-    Opcode Decode(const BytecodeInstruction &inst);
+    inline ALWAYS_INLINE Opcode Decode(const BytecodeInstruction &inst);
 private:
     size_t register_operands_idx_[2];
     uint8_t immediate_operand_;
 };
 
 }
+
+#include "inst_decoder.inl"
 
 #endif  // INTERPRETER_INST_DECODER

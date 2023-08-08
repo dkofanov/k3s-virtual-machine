@@ -10,7 +10,7 @@ file(MAKE_DIRECTORY ${GENERATED_DIR})
 set(TEMPLATES_NAMES
     "dispatch_table.inl"
     "inst_decoder.h"
-    "inst_decoder.cpp"
+    "inst_decoder.inl"
     "opcodes.h"
     "reg_types.inl"
 )
@@ -30,7 +30,6 @@ add_custom_target(interpreter_gen DEPENDS ${TEMPLATES_INSTANTIATED})
 set(INTERPRETER_SRC 
     "${INTERPRETER_SOURCE_DIR}/interpreter.cpp"
     "${INTERPRETER_SOURCE_DIR}/register.cpp"
-    "${INTERPRETER_BINARY_DIR}/generated/inst_decoder.cpp"
 )
 
 add_library(interpreter

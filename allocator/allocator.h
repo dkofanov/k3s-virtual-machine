@@ -13,13 +13,21 @@ class Allocator
 {
     static constexpr uintptr_t ALLOC_START_ADDR = 0xE000000;
     static constexpr size_t ALLOC_SIZE = 1024 * 1024 * 32;
-    static constexpr size_t GC_INTERNALS_SIZE = ALLOC_SIZE / 8;
-    static constexpr size_t STACK_SIZE = ALLOC_SIZE / 8;
+
+    static constexpr uintptr_t CONSTANTS_REGION_PTR = ALLOC_START_ADDR;
+    static constexpr size_t    CONSTANTS_REGION_SIZE = ALLOC_SIZE / 4;
+    static constexpr uintptr_t GC_INTERNALS_REGION_PTR = CONSTANTS_REGION_PTR + CONSTANTS_REGION_SIZE;
+    static constexpr size_t    GC_INTERNALS_REGION_SIZE = ALLOC_SIZE / 8;
+    static constexpr uintptr_t STACK_REGION_PTR = GC_INTERNALS_REGION_PTR + GC_INTERNALS_REGION_SIZE;
+    static constexpr size_t    STACK_REGION_SIZE = ALLOC_SIZE / 8;
+    static constexpr uintptr_t OBJECTS_REGION_PTR = STACK_REGION_PTR + STACK_REGION_SIZE;
+    static constexpr size_t    OBJECTS_REGION_SIZE = ALLOC_SIZE / 2;
+
 public:
-    using ConstRegionT = Region<ALLOC_START_ADDR, ALLOC_SIZE / 2 - GC_INTERNALS_SIZE - STACK_SIZE>;
-    using GCInternalsRegionT = Region<ALLOC_START_ADDR + ALLOC_SIZE / 2 - GC_INTERNALS_SIZE - STACK_SIZE, GC_INTERNALS_SIZE>;
-    using StackRegionT = Region<ALLOC_START_ADDR + ALLOC_SIZE / 2 - STACK_SIZE, STACK_SIZE>;
-    using RuntimeRegionT = GCRegion<ALLOC_START_ADDR + ALLOC_SIZE / 2, ALLOC_SIZE / 2>;
+    using ConstRegionT = Region<CONSTANTS_REGION_PTR, CONSTANTS_REGION_SIZE>;
+    using GCInternalsRegionT = Region<GC_INTERNALS_REGION_PTR, GC_INTERNALS_REGION_SIZE>;
+    using StackRegionT = Region<STACK_REGION_PTR, STACK_REGION_SIZE>;
+    using RuntimeRegionT = GCRegion<OBJECTS_REGION_PTR, OBJECTS_REGION_SIZE>;
 
     static void Init()
     {
