@@ -59,6 +59,20 @@ public:
         return ENCODER.instructions_buffer_;
     }
 
+    static void UpdateMaxRegIdx(size_t idx)
+    {
+        if (ENCODER.current_max_reg_idx_ < idx) {
+            ENCODER.current_max_reg_idx_ = idx;
+        }
+    }
+    
+    static size_t GetAndClearMaxRegIdx()
+    {
+        auto idx = ENCODER.current_max_reg_idx_;
+        ENCODER.current_max_reg_idx_ = 0;
+        return idx;
+    }
+
     static void DeclareAndDefineFunction(char *c_str)
     {
         DeclareId(c_str);
@@ -178,6 +192,11 @@ public:
         }
 
         unresolved_labels_.erase(label_identifier);
+    }
+
+    static void FinalizeMethodOrFunction()
+    {
+        CheckLabelsResolved();
     }
 
     static void CheckLabelsResolved()

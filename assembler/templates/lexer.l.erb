@@ -1,5 +1,6 @@
 %{
     #include "interpreter/generated/opcodes.h"
+    #include "assembler/assembler.h"
     #include <cstdlib>
     #include <cstdio>
     #include <cassert>
@@ -43,7 +44,7 @@ integ [+-]?[0-9]+
                 }
 [r]{integ}      {
                     yylval = atoi(++yytext);
-                    //printf("reg(%d)\n", yylval);
+                    k3s::AsmEncoder::CheckLastRegIdx(yylval);
                     return REG;
                 }
 

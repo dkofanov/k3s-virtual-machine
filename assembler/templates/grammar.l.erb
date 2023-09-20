@@ -1,6 +1,6 @@
 %{
 #include <cstdio>
-#include <assembler/assembler.h>
+#include "assembler/assembler.h"
 
 #define YYDEBUG 1
 
@@ -63,7 +63,7 @@ member:
     data_member;
 
 method: 
-    FUNCTION_KEYW IDENTIFIER { k3s::AsmEncoder::DeclareAndDefineMethod(yytext); } B_BEGIN instructions B_END { k3s::AsmEncoder::CheckLabelsResolved(); };
+    FUNCTION_KEYW IDENTIFIER { k3s::AsmEncoder::DeclareAndDefineMethod(yytext); } B_BEGIN instructions B_END { k3s::AsmEncoder::FinalizeMethodOrFunction(); };
 
 data_member:
     any_member_decl;
@@ -72,7 +72,7 @@ any_member_decl:
     ANY_KEYW IDENTIFIER { k3s::AsmEncoder::DeclareAndDefineAnyDataMember(yytext); }
 
 function:
-    FUNCTION_KEYW IDENTIFIER { k3s::AsmEncoder::DeclareAndDefineFunction(yytext); } B_BEGIN instructions B_END { k3s::AsmEncoder::CheckLabelsResolved(); };
+    FUNCTION_KEYW IDENTIFIER { k3s::AsmEncoder::DeclareAndDefineFunction(yytext); } B_BEGIN instructions B_END { k3s::AsmEncoder::FinalizeMethodOrFunction(); };
 
 num:
     NUM_KEYW IDENTIFIER { k3s::AsmEncoder::DeclareId(yytext); } NUM { k3s::AsmEncoder::DefineNum(yytext); }
