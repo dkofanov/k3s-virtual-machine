@@ -83,7 +83,7 @@ class ISA
         args
     end
     def self.GetGrammarArgs(num)
-        ["$1", "$2", "$3", "$4"].slice(0, num)
+        ["static_cast<k3s::Opcode>($1)", "$2", "$3", "$4"].slice(0, num)
     end
 end
 

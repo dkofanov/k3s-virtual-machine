@@ -51,7 +51,7 @@ public:
         if (err_code != 0) {
             return err_code;
         }
-        GetInterpreter()->SetPc(header->entry_point);
+        GetInterpreter()->SetPc(instructions_buffer + header->entry_point);
         GetInterpreter()->SetProgram(instructions_buffer);
         return 0;
     }

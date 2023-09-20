@@ -68,10 +68,12 @@ public:
         *GetCursor() = new_cursor;
         return allocated;
     }
+
     static size_t GetRemainingSpace()
     {
         return SIZE - *GetCursor();
     }
+
     static constexpr size_t MAX_ALLOC_SIZE = SIZE - sizeof(*GetCursor());
 };
 

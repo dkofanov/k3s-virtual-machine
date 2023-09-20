@@ -122,6 +122,11 @@ private:
     uint64_t value_ {0};
 };
 
+template <typename T>
+class RegMap {
+
+};
+
 }
 
 #endif  // INTERPRETER_REGISTER

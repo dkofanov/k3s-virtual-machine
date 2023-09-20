@@ -18,6 +18,7 @@ template <typename K, typename T>
 using Hash = std::unordered_map<K, T>;
 
 class AsmEncoder;
+
 extern AsmEncoder ENCODER;
 
 class AsmEncoder {
@@ -33,7 +34,7 @@ public:
     static void DumpToFile(FILE *file);
 
     template<size_t opc_size, size_t op1_size, size_t op2_size>
-    static void Encode(uint8_t opcode, uint8_t op1, uint8_t op2) {
+    static void Encode(Opcode opcode, uint8_t op1, uint8_t op2) {
         ASSERT((opc_size + op1_size + op2_size) == 16U);
         uint8_t operands = op2;
         operands <<= InstDecoder::SECOND_NEAR_REG_SHIFT;
@@ -43,12 +44,12 @@ public:
     }
 
     template<size_t opc_size, size_t op1_size>
-    static void Encode(uint8_t opcode, uint8_t operand) {
+    static void Encode(Opcode opcode, uint8_t operand) {
         ASSERT((opc_size + op1_size) == 16U);
         ENCODER.instructions_buffer_.emplace_back(opcode, operand);
     }
     template<size_t opc_size>
-    static void Encode(uint8_t opcode) {
+    static void Encode(Opcode opcode) {
         uint8_t padding = 0;
         ASSERT((opc_size + sizeof(padding) * 8U) == 16U);
         ENCODER.instructions_buffer_.emplace_back(opcode, padding);
@@ -59,12 +60,27 @@ public:
         return ENCODER.instructions_buffer_;
     }
 
+    static void UpdateMaxRegIdx(size_t idx)
+    {
+        if (ENCODER.tmp_current_function_max_reg_idx_ < idx) {
+            ENCODER.tmp_current_function_max_reg_idx_ = idx;
+        }
+    }
+    
+    static size_t GetAndClearMaxRegIdx()
+    {
+        auto idx = ENCODER.tmp_current_function_max_reg_idx_;
+        ENCODER.tmp_current_function_max_reg_idx_ = 0;
+        return idx;
+    }
+
     static void DeclareAndDefineFunction(char *c_str)
     {
         DeclareId(c_str);
         auto bc_offset = ENCODER.instructions_buffer_.size();
         LOG_DEBUG(ASSEMBLER, "Function `" << c_str << "` (pc " << bc_offset << ")");
-        ENCODER.constant_pool_.SetFunction(ENCODER.temp_idx_, bc_offset);
+        ENCODER.constant_pool_.SetFunction(ENCODER.tmp_constant_pool_id_, bc_offset);
+        ENCODER.tmp_current_function_bc_offset_ = bc_offset;
     }
     
     static void DeclareAndDefineMethod(char *c_str)
@@ -73,6 +89,7 @@ public:
         LOG_DEBUG(ASSEMBLER, "Method `" << c_str << "` (pc " << bc_offset << ")");
         ENCODER.objects_storage_.back().methods_bc_offsets_.push_back(bc_offset);
         ENCODER.objects_storage_.back().methods_.emplace_back(c_str);
+        ENCODER.tmp_current_function_bc_offset_ = bc_offset;
     }
     
     static void DeclareAndDefineAnyDataMember(char *c_str)
@@ -83,7 +100,7 @@ public:
     static void DeclareObject(char *c_str)
     {
         DeclareId(c_str);
-        ENCODER.constant_pool_.SetObject(ENCODER.temp_idx_, ENCODER.objects_storage_.size());
+        ENCODER.constant_pool_.SetObject(ENCODER.tmp_constant_pool_id_, ENCODER.objects_storage_.size());
         ENCODER.objects_storage_.emplace_back();
     }
 
@@ -101,13 +118,13 @@ public:
 
         // NB: cache this idx because it is unhandy to resolve it later because num
         // declaration and definition is separated (see `assembler/templates/grammar.l.erb`):
-        ENCODER.temp_idx_ = idx;
+        ENCODER.tmp_constant_pool_id_ = idx;
     }
 
     static void DefineNum(char *c_str)
     {
         double num = atof(c_str);
-        ENCODER.constant_pool_.SetNum(ENCODER.temp_idx_, num);
+        ENCODER.constant_pool_.SetNum(ENCODER.tmp_constant_pool_id_, num);
     }
 
     static void DefineStr(const char *c_str)
@@ -116,7 +133,7 @@ public:
         ENCODER.strings_storage_.emplace_back(c_str + 1);
         ASSERT(ENCODER.strings_storage_.back().back() == '"');
         ENCODER.strings_storage_.back().pop_back();
-        ENCODER.constant_pool_.SetStr(ENCODER.temp_idx_, ENCODER.strings_storage_.size() - 1);
+        ENCODER.constant_pool_.SetStr(ENCODER.tmp_constant_pool_id_, ENCODER.strings_storage_.size() - 1);
     }
 
     static uint8_t TryResolveName(const char *c_str)
@@ -180,6 +197,26 @@ public:
         unresolved_labels_.erase(label_identifier);
     }
 
+    static void FinalizeMethod()
+    {
+        FinalizeFunction();
+    }
+
+    static void FinalizeFunction()
+    {
+        auto slots_n = GetAndClearMaxRegIdx();
+        CheckLabelsResolved();
+        /* iterate from the beggining, find all call's and set the fuction frame vreg size */
+        auto idx = ENCODER.tmp_current_function_bc_offset_;
+        auto last_idx = ENCODER.GetInstructionsBuffer().size();
+        for (; idx < last_idx; idx++) {
+            auto *inst = &ENCODER.GetInstructionsBuffer()[idx]; 
+            if (inst->GetOpcode() == Opcode::CALL) {
+                inst->SetOperands(slots_n);
+            }
+        } 
+    }
+
     static void CheckLabelsResolved()
     {
         if (ENCODER.unresolved_labels_.size() != 0) {
@@ -214,7 +251,9 @@ private:
     Vector<ObjectDescr> objects_storage_ {};
     ConstantPool constant_pool_ {};
 
-    uint8_t temp_idx_ {};
+    uint8_t tmp_constant_pool_id_ {};
+    size_t tmp_current_function_bc_offset_ {};
+    uint8_t tmp_current_function_max_reg_idx_{};
     bool is_class_context_ {false};
 };
 

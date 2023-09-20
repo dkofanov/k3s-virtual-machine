@@ -1,6 +1,7 @@
 #ifndef INTERPRETER_TYPES_FUNCTION_H
 #define INTERPRETER_TYPES_FUNCTION_H
 
+#include "interpreter/bytecode_instruction.h"
 #include "interpreter/register.h"
 #include "allocator/allocator.h"
 #include "allocator/object_header.h"
@@ -10,9 +11,9 @@ namespace k3s::coretypes {
 
 class Function : public ObjectHeader {
 public:
-    Function(size_t target_pc) : target_pc_(target_pc) {}
+    Function(BytecodeInstruction *target_pc) : target_pc_(target_pc) {}
 
-    size_t GetTargetPc() const {
+    auto GetTargetPc() const {
         return target_pc_;
     }
 
@@ -53,23 +54,23 @@ public:
     }
 
     template <uintptr_t START_PTR, size_t SIZE>
-    static coretypes::Function *New(GCRegion<START_PTR, SIZE> reg, size_t bc_offs);
+    static coretypes::Function *New(GCRegion<START_PTR, SIZE> reg, BytecodeInstruction *pc);
 
     static constexpr size_t INPUTS_COUNT = 4;
     static constexpr size_t OUTPUTS_COUNT = 4;
 private:
-    const size_t target_pc_ {};
+    const BytecodeInstruction *target_pc_ {};
     Register this_ {};
     Register inputs_[INPUTS_COUNT] {};
     Register outputs_[OUTPUTS_COUNT] {};
 };
 
 template <uintptr_t START_PTR, size_t SIZE>
-inline coretypes::Function *Function::New(GCRegion<START_PTR, SIZE> reg, size_t bc_offs)
+inline coretypes::Function *Function::New(GCRegion<START_PTR, SIZE> reg, BytecodeInstruction *pc)
 {
     size_t allocated_size = sizeof(coretypes::Function);
     void *storage = reg.AllocBytes(allocated_size);
-    auto *ptr = new (storage) coretypes::Function(bc_offs);
+    auto *ptr = new (storage) coretypes::Function(pc);
     ptr->SetAllocatedSize(allocated_size);
     return ptr;
 }

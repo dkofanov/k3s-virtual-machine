@@ -26,7 +26,5 @@ int main(int argc, char *argv[])
         LOG_FATAL(INTERPRETER, "Loading failed");
     }
 
-    k3s::Runtime::GetInterpreter()->Invoke();
-
-    return 0;
+    return  k3s::Runtime::GetInterpreter()->Invoke();;
 }

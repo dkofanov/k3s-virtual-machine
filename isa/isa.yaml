@@ -65,21 +65,34 @@ opcodes:
             2. if (acc < 0) { pc <- pc + i8 }
             3. if (acc >= 0) { pc <- pc + i8 }
             4. if (acc != 0) { pc <- pc + i8 }
-
-      - signature: opc
+      
+      - signature: opc_i8
         opc:
         - call
         overloads:
         - in: ["a:FUNC"]
           out: []
-          semantics: acc.invoke()
+          semantics: >
+            Create a new frame at the FP + FrameSize(i8) and update pc.
+      
       - signature: opc
         opc:
         - ret
         overloads:
         - in: []
           out: []
-          semantics: return
+          semantics: >
+            Restore saved PC, increment it.
+            Destroy frame in assumption it's vregs_n was `i8` 
+      
+      - signature: opc_i8
+        opc:
+        - exit
+        overloads:
+        - in: []
+          out: []
+          semantics: >
+            Terminates execution with exit code `i8`.
 
       Objects:
       - signature: opc_r8
@@ -90,6 +103,7 @@ opcodes:
           out: ["r:OBJ"]
           semantics: >
             r <- *this
+      
       - signature: opc_r8
         opc:
         - stnull
@@ -108,6 +122,7 @@ opcodes:
           out: ["a:ANY"]
           semantics: > 
             acc <- allocobj(CONSTANT_POOL[imm8])
+      
       - signature: opc_r8
         opc:
         - lda
@@ -115,6 +130,7 @@ opcodes:
         - in: ["r:ANY"]
           out: ["a:ANY"]
           semantics: acc <- reg
+      
       - signature: opc_r8
         opc:
         - sta
@@ -122,6 +138,7 @@ opcodes:
         - in: ["a:ANY"]
           out: ["r:ANY"]
           semantics: reg <- acc
+      
       - signature: opc_r4_r4
         opc:
         - mov
@@ -167,6 +184,7 @@ opcodes:
         - in:   ["a:ARR", "r:NUM"]
           out:  ["a:ARR"]
           semantics: foreach idx { acc[idx] <- acc[idx] opc ri }
+      
       - signature: opc_r8
         opc:
         - sub2
@@ -235,6 +253,7 @@ opcodes:
         - in: ["r:ANY"]
           out: []
           semantics: r1.dump()
+      
       - signature: opc
         opc:
         - dumpa
@@ -253,6 +272,7 @@ opcodes:
           out: ["r:ANY"]
           semantics: >
             reg <- (*this).GetArg<0>();
+      
       - signature: opc_r8
         opc:
         - setret0
@@ -261,6 +281,7 @@ opcodes:
           out: []
           semantics: >
             (*this).SetRet<0>(reg);
+      
       - signature: opc_r8
         opc:
         - setarg0
@@ -270,6 +291,7 @@ opcodes:
           out: []
           semantics: > 
             1. acc.GetAsFunction().SetArg<i>(reg)
+      
       - signature: opc_r8
         opc:
         - getret0

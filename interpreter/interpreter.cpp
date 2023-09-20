@@ -1,7 +1,6 @@
 #include "interpreter.h"
 #include "generated/inst_decoder.h"
 #include "runtime/runtime.h"
-#include "types/coretypes.h"
 #include <cmath>
 
 namespace k3s {
@@ -32,7 +31,8 @@ int Interpreter::Invoke()
 {
     InstDecoder decoder;
     auto *main_ptr = coretypes::Function::New(Runtime::GetAllocator()->ObjectsRegion(), pc_);
-    Runtime::GetInterpreter()->GetStateStack()->emplace_back(-1, main_ptr);
+    
+    GetStateStack()->CreateFrame<true>(nullptr, main_ptr);
 
 #include "generated/dispatch_table.inl"
 
@@ -136,15 +136,14 @@ int Interpreter::Invoke()
 
     RET:
     {
-        if (Runtime::GetInterpreter()->GetStateStack()->size() == 1) {
-            return decoder.GetImm();
-        } else {
-            // return to the caller frame;
-            // stack contains pc of the call instruction:
-            pc_ = Runtime::GetInterpreter()->GetStateStack()->back().caller_pc_;
-            pc_++;
-            Runtime::GetInterpreter()->GetStateStack()->pop_back();
-        }
+        // NB: The stack should have the caller frame.
+        //     Every program should be terminated via EXIT inst. 
+        
+        // return to the caller frame;
+        // stack contains pc of the call instruction:
+        pc_ = Runtime::GetInterpreter()->GetStateStack()->DestroyFrame();
+        ASSERT(pc_->GetOpcode() == Opcode::CALL);
+        pc_++;
         FETCH_AND_DISPATCH();
     }
 
@@ -191,10 +190,8 @@ int Interpreter::Invoke()
     }
 
     CALL_aFUNC: {
-        // return to the caller frame;
-        // stack contains pc of the call instruction:
         auto *func_obj = GetAcc().GetAsFunction(); 
-        Runtime::GetInterpreter()->GetStateStack()->emplace_back(pc_, func_obj);
+        Runtime::GetInterpreter()->GetStateStack()->CreateFrame(pc_, func_obj);
         pc_ = func_obj->GetTargetPc();
         FETCH_AND_DISPATCH();
     }
@@ -316,6 +313,11 @@ int Interpreter::Invoke()
     DUMPA_aANY: {
         GetAcc().Dump();
         ADVANCE_FETCH_AND_DISPATCH();
+    }
+    EXIT: {
+        // Exit should be executed only in main:
+        ASSERT(GetStateStack()->Frame()->CallerPc() == nullptr);
+        return decoder.GetImm();
     }
 }
 
