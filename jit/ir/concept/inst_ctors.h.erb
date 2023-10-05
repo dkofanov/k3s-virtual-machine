@@ -1,0 +1,107 @@
+#pragma once
+#include "graph.h"
+#include "common.h"
+#include <string_view>
+#include <initializer_list>
+
+namespace compiler {
+class GraphHolder
+{
+public:
+    GraphHolder()
+    {
+        GRAPH = &g_;
+    }
+
+    const auto &GetGraph() { return g_; }
+private:
+    Graph g_;
+};
+
+#define GRAPH(GR, ...) \
+class Graph##GR  {   \
+inline static GraphHolder GR; \
+public:                                     \
+    void Dump() { GR.GetGraph().Dump(); }   \
+__VA_ARGS__                                 \
+} GR; 
+
+class BlockCtorBase
+{
+public:
+    BlockCtorBase(std::string_view lbl) : bb_id_(GRAPH->NewBB()), lbl_(lbl) {}
+
+    void Dump() { GRAPH->GetBlockById(bb_id_)->Dump(); }
+    auto GetBB() { return GRAPH->GetBlockById(bb_id_); }
+
+    class PredDeclarator
+    {
+    public:
+        PredDeclarator(size_t bb_id) : bb_id_(bb_id) {}
+
+        void operator>(BlockCtorBase &succ) { GRAPH->GetBlockById(bb_id_)->SetSucc(succ.GetBB()); }
+    public:
+        size_t bb_id_{};
+    };
+    
+    auto operator--(int) { return PredDeclarator(bb_id_); }
+
+public:
+    size_t bb_id_;
+    std::string_view lbl_;
+};
+
+#define DECL_CLASS_REC(SUFX, BASE, ...)
+
+#define BLOCK(BL, ...) \
+class BlockCtor_##BL : public BlockCtorBase {   \
+public:                 \
+BlockCtor_##BL() :BlockCtorBase(#BL) {};  \
+__VA_ARGS__    \
+}; static inline BlockCtor_##BL BL 
+
+#define EDGES(...) EDGES_INTERNAL(__LINE__, __VA_ARGS__)
+#define EDGES_INTERNAL(LINE, BODY) EDGES_PASTE(LINE, BODY)
+
+#define EDGES_PASTE(LINE, BODY) \
+class Edges_##LINE {   \
+public:                 \
+Edges_##LINE() {        \
+BODY;                    \
+};                      \
+}; static inline Edges_##LINE edges_##LINE 
+
+
+% IR.instructions.each do |inst|
+% inst_class_name = inst.opcode + "Inst"
+
+#define <%= inst.opcode.upcase %>(...) <%= inst.opcode.upcase %>_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define <%= inst.opcode.upcase %>_INTERNAL(LINE, ...) <%= inst.opcode.upcase %>_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define <%= inst.opcode.upcase %>_INTERNAL_PASTE(LINE, ...) \
+    struct <%= inst_class_name %>_##LINE##_ctor \
+    {                                                                                 \
+% if inst.argc == 0 then
+        <%= inst_class_name %>_##LINE##_ctor ()                  \
+        {                                                       \
+            GRAPH->GetBlockById()->PushBack(&this->inst_);                              \
+        }                                                                               \
+% end
+        /* init-list currently used only for inputs so `Inst *` should be enough */     \
+        <%= inst_class_name %>_##LINE##_ctor (std::initializer_list<Inst *> l)                  \
+        {                          \
+            size_t i = 0;                                                   \
+            for (auto input : l) {  \
+                inst_.SetInput(i, input);                      \
+                i++;                                            \
+            }                                                       \
+            GRAPH->GetBlockById()->PushBack(&this->inst_);                              \
+        }                                                                               \
+        operator <%= inst_class_name %>*() { return &inst_; } \
+        <%= inst_class_name %> inst_ {__VA_ARGS__}; \
+    }
+
+% end
+
+}
