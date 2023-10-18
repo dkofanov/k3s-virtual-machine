@@ -1,0 +1,36 @@
+instructions:
+
+  
+  - opcode: Const
+    argc: 0
+    mixins:
+    - Typed       # unnecessary mixin, for dev+testing purpose 
+    - Immediate
+
+# Artithmetics:
+  - opcode: Add
+    argc: 2
+
+  - opcode: Sub
+    argc: 2
+  
+  - opcode: Mul
+    argc: 2
+
+# CF-related
+  - opcode: Phi
+
+  - opcode: Jmp
+    argc: 2
+    mixins:
+    - Conditional
+
+  - opcode: Parameter
+    argc: 0
+    mixins:
+    - Typed
+  
+  - opcode: Return
+    argc: 1
+    mixins:
+    - Typed

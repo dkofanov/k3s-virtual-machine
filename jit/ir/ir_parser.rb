@@ -14,10 +14,19 @@ class IRDesc
     end
 
     def base_class_name
-      is_special? ? "Inst" : inputs_base
+      inputs_base
     end
     def inputs_base
       is_fixed? ? "FixedInputsInst<#{@argc}>" : "VariadicInputsInst"
+    end
+  
+    def append_argc(is_decl = true)
+      str = ""
+      if !is_fixed?
+        str += "#{is_decl ? "size_t" : ""} inputs_count"
+        str += ", " if (mixins.length > 0) || !is_decl
+      end
+      str       
     end
 
     def inheritance_list
@@ -27,10 +36,6 @@ class IRDesc
         arr.append "public #{mixin}Mixin"
       end
       arr.join(', ')
-    end
-
-    def is_special?
-      @special
     end
 
     def opcode
@@ -74,9 +79,9 @@ def TypedArgList(prefix1, prefix2, count)
     return (0..count - 1).collect{ |x| prefix1.to_s + x.to_s + ' ' + prefix2.to_s + x.to_s }.join(", ")
 end
 
-IR = IRDesc.new(YAML.load_file("ir.yaml"))
-template1 = ERB.new(File.read("inst_ctors.h.erb"), 0, "%-")
-template2 = ERB.new(File.read("inst.h.erb"), 0, "%-")
+IR = IRDesc.new(YAML.load_file("ir/ir.yaml"))
+template1 = ERB.new(File.read("ir/graph/templates/inst_ctors.h.erb"), 0, "%-")
+template2 = ERB.new(File.read("ir/graph/templates/inst.h.erb"), 0, "%-")
 
-File.write("inst_ctors_gen.h", template1.result)
-File.write("inst_gen.h", template2.result)
+File.write("ir/graph/gen/inst_ctors_gen.h", template1.result)
+File.write("ir/graph/gen/inst_gen.h", template2.result)

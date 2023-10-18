@@ -1,5 +1,6 @@
 #pragma once
-#include "common.h"
+#include "../../common.h"
+#include "marker.h"
 #include "basic_block.h"
 
 namespace compiler {
@@ -41,21 +42,29 @@ public:
         ASSERT(id < blocks_.size());
         return &blocks_[id];
     }
-
-    void Dump() const
+    auto *GetEntryBlock()
     {
-        std::cout << "GRAPH(g0,\n"; 
-        for (size_t i = 0; i < blocks_.size(); i++) {
-            std::cout << "    BLOCK(b" << i << ",\n";
-            blocks_[i].Dump();
-            std::cout << "    );\n";
-        }
-        std::cout << ");\n";
+        auto *start = GetBlockById(0);
+        ASSERT(start->Preds().size() == 0);
+        return start;
     }
+
+    void BuildDomTree();
+    auto IDomOf(const BasicBlock *b) { return idoms_[b->Id()]; }
+
+    void BuildRPO();
+    const auto &GetRPO() { return rpo_; }
+    void DumpRPO() const;
+    void Dump() const;
+
+    auto NewMarker() { return marker_.NewMarker(); }
 
 private:
     size_t inst_id_{};
     Vector<BasicBlock> blocks_{};
+    Vector<BasicBlock *> rpo_{};
+    Vector<BasicBlock *> idoms_{};
+    Marker marker_;
 };
 
 

@@ -123,17 +123,49 @@ private:
 };
 using Type = TypedMixin::Type;
 
+class ImmediateMixin {
+public:
+    auto &Dump()
+    {
+        return std::cout << imm_;
+    }
+
+    ImmediateMixin(uint64_t imm) : imm_{imm} {}
+private:
+    uint64_t imm_;
+};
+using Type = TypedMixin::Type;
+
+
 class ConditionalMixin {
 public:
-    enum Cond {
+    enum class If {
         EQ,
         NE,
         GT,
         GE,
-    };
+    }; 
+    const auto *ToString() const
+    {
+        switch (cond_) {
+        case If::EQ: return "EQ";
+        case If::NE: return "NE";
+        case If::GT: return "GT";
+        case If::GE: return "GE";
+        default: UNREACHABLE();
+        }
+    }
+
+    auto &Dump()
+    {
+        return std::cout << "If::" << ToString();
+    }
+
+    ConditionalMixin(If cond) : cond_{cond} {}
 private:
-    Cond cond_;
+    If cond_;
 };
+using If = ConditionalMixin::If;
 
 class User {
 public:
@@ -395,16 +427,13 @@ public:
     }
     auto &DumpDF()
     {
-        std::cout << "{ ";
-        if (!inputs_.empty()) {
-            ASSERT(inputs_[0] != nullptr);
-            std::cout << inputs_[0]->Id();
-        }
+        ASSERT(inputs_[0] != nullptr);
+        std::cout << "{ " << ((BB() == inputs_[0]->BB()) ? "" : "b" + std::to_string(inputs_[0]->GetBBId()) + ".") << "v" << inputs_[0]->Id();
         for (size_t i = 1; i < inputs_.size(); i++) {
             ASSERT(inputs_[i] != nullptr);
-            std::cout << ", " << inputs_[i]->Id();
+            std::cout << ", " << ((BB() == inputs_[i]->BB()) ? "" : "b" + std::to_string(inputs_[i]->GetBBId()) + ".") << "v" << inputs_[i]->Id();
         }
-        return std::cout << "}";
+        return std::cout << " }";
     }
 
 private:
@@ -418,8 +447,8 @@ class <%= inst.opcode %>Inst : <%= inst.inheritance_list %>
 {
 public:
     template <<%= ArgList("typename Arg", inst.mixins.length) + "#{inst.mixins.length == 0 ? "" : ","}" %> typename unused = void>
-    <%= inst.opcode %>Inst(<%= TypedArgList("Arg", "&&arg", inst.mixins.length) %>)
-    : <%= inst.base_class_name %>(<%= inst.opcode.upcase %>)
+    <%= inst.opcode %>Inst(<%= inst.append_argc %> <%= TypedArgList("Arg", "&&arg", inst.mixins.length) %>)
+    : <%= inst.base_class_name %>(<%= inst.append_argc(false) %><%= inst.opcode.upcase %>)
 % inst.mixins.each_with_index do |mixin, idx|
     , <%= mixin %>Mixin(arg<%= idx %>)
 % end 

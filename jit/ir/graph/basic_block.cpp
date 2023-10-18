@@ -14,7 +14,7 @@ namespace compiler {
             if (cur->IsPhi()) {
                 auto phi = cur->AsPhi();
                 ASSERT(!phi_ended && "phi should be at the start only");
-                ASSERT(phi->GetInputsCount() == GetPreds().size());
+                ASSERT(phi->GetInputsCount() == Preds().size());
             }
             
             if (cur->Next() == nullptr) {
@@ -25,7 +25,7 @@ namespace compiler {
         } while (true);
 
        
-        ASSERT(GetSuccs().size() > 2);
+        ASSERT(Succs().size() <= 2);
         return true;
     }
 

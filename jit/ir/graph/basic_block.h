@@ -1,40 +1,41 @@
 #pragma once
-#include "common.h"
-#include "inst_gen.h"
+#include "marker.h"
+#include "../../common.h"
+#include "gen/inst_gen.h"
 
 namespace compiler {
 
-class BasicBlock
+class BasicBlock : public Marker
 {
 public:
     static constexpr size_t TRUE_SUCC_IDX = 0;
     static constexpr size_t FALSE_SUCC_IDX = 1;
 
     BasicBlock();
-    auto Id() { return id_; }
+    auto Id() const { return id_; }
 
-    void SetTrueFalseSucc(BasicBlock *t_succ, BasicBlock *f_succ)
+    void SetTrueFalseSuccs(BasicBlock *t_succ, BasicBlock *f_succ)
     {
         ASSERT(succs_.size() == 0);
         succs_.resize(2);
-        succs_[TRUE_SUCC_IDX] = t_succ->Id();
-        succs_[FALSE_SUCC_IDX] = f_succ->Id();
-        t_succ->preds_.push_back(Id());
-        f_succ->preds_.push_back(Id());        
+        succs_[TRUE_SUCC_IDX] = t_succ;
+        succs_[FALSE_SUCC_IDX] = f_succ;
+        t_succ->preds_.push_back(this);
+        f_succ->preds_.push_back(this);        
     }
 
     void SetSucc(BasicBlock *succ)
     {
         ASSERT(succs_.size() == 0);
-        succs_.push_back(succ->Id());
-        succ->preds_.push_back(Id());
+        succs_.push_back(succ);
+        succ->preds_.push_back(this);
     }
-    const auto &GetPreds() const
+    const auto &Preds() const
     {
         return preds_;
     }
 
-    const auto &GetSuccs() const
+    const auto &Succs() const
     {
         return succs_;
     }
@@ -88,9 +89,9 @@ public:
     
     void Dump() const
     {
-        std::cout << "// Preds: { ";
+        std::cout << "    // Preds: { ";
         for (auto i : preds_) {
-            std::cout << i << " ";
+            std::cout << "b" << i->Id() << " ";
         }
         std::cout << "}\n";
 
@@ -100,21 +101,23 @@ public:
             cur = cur->Next();
         } while (cur != nullptr);
         
-        std::cout << "// Succs: { ";
+        std::cout << "    // Succs: { ";
         for (auto i : succs_) {
-            std::cout << i << " ";
+            std::cout << "b" << i->Id() << " ";
         }
         std::cout << "}\n";
     }
 
-    using Preds = Vector<size_t>;
-    using Succs = Vector<size_t>;
+    auto FirstInst() { return first_inst_; }
+
+    using PredsT = Vector<BasicBlock *>;
+    using SuccsT = Vector<BasicBlock *>;
 private:
     // TBD: separate first-Phi last-Phi;
     Inst *first_inst_ {};
     Inst *last_inst_ {};
-    Preds preds_;
-    Succs succs_;
+    PredsT preds_;
+    SuccsT succs_;
     size_t id_;
 };
 
