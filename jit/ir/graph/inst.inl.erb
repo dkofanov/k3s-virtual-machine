@@ -1,0 +1,87 @@
+class Inst {
+public:
+    enum Opcode {
+        NONE,
+% IR.instructions.each do |inst|
+        <%= inst.opcode.upcase %>,
+% end
+    };
+
+% IR.instructions.each do |inst|
+    bool Is<%= inst.opcode %>() const { return opcode_ == <%= inst.opcode.upcase %>; }
+    auto As<%= inst.opcode %>();
+% end
+
+    Inst(Opcode opcode);
+
+    Inst *GetInput(size_t i);
+    size_t GetInputsCount();
+
+    void Dump();
+
+    auto GetOpcode()
+    {
+        return opcode_;
+    }
+
+    void SetNext(Inst *next)
+    {
+        ASSERT(next_ == nullptr);
+        next_ = next;
+        ASSERT(next->prev_ == nullptr);
+        next->prev_ = this;
+    }
+    Inst *Next()
+    {
+        return next_;
+    }
+    
+    auto Id() const
+    {
+        return id_;
+    }
+    
+    auto BB() { return bb_; }
+    size_t GetBBId();
+    void SetBB(BasicBlock *bb) { bb_ = bb; }
+
+private:
+    auto GetFirstUserRef()
+    {
+        return &first_user_;
+    }
+
+    bool IsFixed()
+    {
+        switch (opcode_) {
+% IR.instructions.each do |inst|
+%   if not inst.is_fixed?
+        case <%= inst.opcode.upcase %>:
+%   end
+% end
+            return false;
+        default:
+            return true;
+        }
+    }
+    
+private:
+    static constexpr uint8_t INPUTS_COUNT_ARRAY[] =
+    {
+        (uint8_t) -1,
+% IR.instructions.each do |inst|
+ (uint8_t) <%=  inst.argc.to_s + ', ' -%>
+% end
+    
+    };
+
+private:
+    Opcode opcode_{};
+    size_t id_{};
+    BasicBlock *bb_{};
+    User *first_user_{};
+    Inst *prev_{};
+    Inst *next_{};
+
+friend class User;
+};

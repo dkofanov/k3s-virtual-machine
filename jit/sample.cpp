@@ -1,25 +1,28 @@
-#include "ir/graph/gen/inst_ctors_gen.h"
+#include "ir/graph/gen/graph_ctor.h"
 
 using namespace compiler;
 
-namespace test1
+namespace hw0
 {
     GRAPH(g,
-        BLOCK(b_if,
+        BLOCK(entry,
             PARAMETER(Type::FLOAT64) a0 ;
             PARAMETER(Type::FLOAT64) a1 ;
-            ADD() s0 {a0, a1};
+        );
+        
+        BLOCK(b_if,
+            ADD() s0 {entry.a0, entry.a1};
             //ADD(s0, a0) s1;
             //CMP(s0, s1) cmp0;
             //BR(GT) br
         );
         
         BLOCK(b_true,
-            SUB() sub {b_if.a0, b_if.a1};
+            SUB() sub {b_if.s0, b_if.s0};
         );
 
         BLOCK(b_false,
-            SUB() sub { b_if.a1, b_if.a0};
+            SUB() sub { b_if.s0, b_if.s0};
         );
     
         BLOCK(last,
@@ -27,17 +30,20 @@ namespace test1
         );
 
         EDGES(
-            b_if --> (b_true, b_false) --> last --> b_if;
+            entry --> b_if --> (b_true, b_false) --> last --> b_if;
         );
     );
 
 
-    void test1() {
+    void test() {
+        g->BuildRPO();
+        g->BuildDomTree();
+        g->AnalyzeLoops();
         g.Dump();
     }
 }
 
-namespace test_fact {
+namespace hw1_fact {
     GRAPH(test_fact,
         BLOCK(start,
             CONST(Type::INT64, 1) v0;
@@ -68,12 +74,15 @@ namespace test_fact {
 
     void test()
     {
+        test_fact->BuildRPO();
+        test_fact->BuildDomTree();
+        test_fact->AnalyzeLoops();
         test_fact.Dump();
     }
 }
 
 
-namespace test_doms {
+namespace hw2_hw3_doms_and_loops {
     GRAPH(g1,
         BLOCK(A, CONST(Type::INT64, 1) dummy; );
         BLOCK(B, CONST(Type::INT64, 1) dummy; );
@@ -110,6 +119,21 @@ namespace test_doms {
         ASSERT(g1->IDomOf(g1.E) == g1.F);
         ASSERT(g1->IDomOf(g1.F) == g1.B);
         ASSERT(g1->IDomOf(g1.G) == g1.F);
+
+        g1->AnalyzeLoops();
+        g1->Dump();
+        auto loop_0 = g1.A->Loop();
+        ASSERT(loop_0->Header() == g1.A);
+        ASSERT(loop_0->BackEdges().size() == 0);
+        ASSERT(loop_0->Reducible());
+
+        ASSERT(g1.A->Loop() == loop_0);
+        ASSERT(g1.B->Loop() == loop_0);
+        ASSERT(g1.C->Loop() == loop_0);
+        ASSERT(g1.D->Loop() == loop_0);
+        ASSERT(g1.E->Loop() == loop_0);
+        ASSERT(g1.F->Loop() == loop_0);
+        ASSERT(g1.G->Loop() == loop_0);
         g1.BG();
     }
 
@@ -136,6 +160,7 @@ namespace test_doms {
     );
     void test2()
     {
+        std::cout << "test2" << std::endl;
         g2.FG();
 
         g2->BuildRPO();
@@ -165,6 +190,41 @@ namespace test_doms {
         ASSERT(g2->IDomOf(g2.I) == g2.G);
         ASSERT(g2->IDomOf(g2.J) == g2.B);
         ASSERT(g2->IDomOf(g2.K) == g2.I);
+        g2->AnalyzeLoops();
+        g2->Dump();
+
+        auto loop_0 = g2.A->Loop();
+        ASSERT(loop_0->Header() == g2.A);
+        ASSERT(loop_0->BackEdges().size() == 0);
+        ASSERT(loop_0->Reducible());
+        auto loop_1 = g2.B->Loop();
+        ASSERT(loop_1->Header() == g2.B);
+        ASSERT(loop_1->BackEdges().size() == 1);
+        ASSERT(loop_1->BackEdges()[0] == g2.H);
+        ASSERT(loop_1->Reducible());
+        auto loop_2 = g2.C->Loop();
+        ASSERT(loop_2->Header() == g2.C);
+        ASSERT(loop_2->BackEdges().size() == 1);
+        ASSERT(loop_2->BackEdges()[0] == g2.D);
+        ASSERT(loop_2->Reducible());
+        auto loop_3 = g2.E->Loop();
+        ASSERT(loop_3->Header() == g2.E);
+        ASSERT(loop_3->BackEdges().size() == 1);
+        ASSERT(loop_3->BackEdges()[0] == g2.F);
+        ASSERT(loop_3->Reducible());
+
+
+        ASSERT(g2.A->Loop() == loop_0);
+        ASSERT(g2.B->Loop() == loop_1);
+        ASSERT(g2.C->Loop() == loop_2);
+        ASSERT(g2.D->Loop() == loop_2);
+        ASSERT(g2.E->Loop() == loop_3);
+        ASSERT(g2.F->Loop() == loop_3);
+        ASSERT(g2.G->Loop() == loop_1);
+        ASSERT(g2.H->Loop() == loop_1);
+        ASSERT(g2.I->Loop() == loop_0);
+        ASSERT(g2.J->Loop() == loop_1);
+        ASSERT(g2.K->Loop() == loop_0);
 
         g2.BG();
     }
@@ -213,6 +273,45 @@ namespace test_doms {
         ASSERT(g3->IDomOf(g3.G) == g3.B);
         ASSERT(g3->IDomOf(g3.H) == g3.F);
         ASSERT(g3->IDomOf(g3.I) == g3.B);
+
+        // Similiar asserts:
+        ASSERT(g3->IsDominator(g3.A, g3.A));
+        ASSERT(g3->IsDominator(g3.A, g3.B));
+        ASSERT(g3->IsDominator(g3.B, g3.C));
+        ASSERT(g3->IsDominator(g3.B, g3.D));
+        ASSERT(g3->IsDominator(g3.B, g3.E));
+        ASSERT(g3->IsDominator(g3.E, g3.F));
+        ASSERT(g3->IsDominator(g3.B, g3.G));
+        ASSERT(g3->IsDominator(g3.F, g3.H));
+        ASSERT(g3->IsDominator(g3.B, g3.I));
+        
+        g3->AnalyzeLoops();
+        g3->Dump();
+
+        auto loop_0 = g3.A->Loop();
+        ASSERT(loop_0->Header() == g3.A);
+        ASSERT(loop_0->BackEdges().size() == 0);
+        ASSERT(loop_0->Reducible());
+        auto loop_1 = g3.B->Loop();
+        ASSERT(loop_1->Header() == g3.B);
+        ASSERT(loop_1->BackEdges().size() == 1);
+        ASSERT(loop_1->BackEdges()[0] == g3.F);
+        ASSERT(loop_1->Reducible());
+        auto loop_2 = g3.G->Loop();
+        ASSERT(loop_2->Header() == g3.G);
+        ASSERT(loop_2->BackEdges().size() == 1);
+        ASSERT(loop_2->BackEdges()[0] == g3.D);
+        ASSERT(!loop_2->Reducible());
+
+        ASSERT(g3.A->Loop() == loop_0);
+        ASSERT(g3.B->Loop() == loop_1);
+        ASSERT(g3.C->Loop() == loop_0);
+        ASSERT(g3.D->Loop() == loop_2);
+        ASSERT(g3.E->Loop() == loop_1);
+        ASSERT(g3.F->Loop() == loop_1);
+        ASSERT(g3.G->Loop() == loop_2);
+        ASSERT(g3.H->Loop() == loop_0);
+        ASSERT(g3.I->Loop() == loop_0);
         g3.BG();
     }
 
@@ -225,8 +324,8 @@ namespace test_doms {
 
 int main()
 {
-    test1::test1();
-    test_fact::test();
-    test_doms::test();
+    hw0::test();
+    hw1_fact::test();
+    hw2_hw3_doms_and_loops::test();
     return 0;
 }

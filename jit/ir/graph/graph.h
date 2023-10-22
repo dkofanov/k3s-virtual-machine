@@ -5,7 +5,6 @@
 
 namespace compiler {
 
-
 class Graph;
 
 extern Graph *GRAPH;
@@ -24,11 +23,15 @@ public:
         blocks_.emplace_back();
         return blocks_.size() - 1;
     }
+
     auto IncInstId()
     {
         inst_id_++;
         return inst_id_;
     }
+
+    Loop *NewLoop(BasicBlock *header = nullptr);
+
     auto GetBlocksCount()
     {
         return blocks_.size();
@@ -50,10 +53,37 @@ public:
     }
 
     void BuildDomTree();
+    bool IsDomTreeValid();
     auto IDomOf(const BasicBlock *b) { return idoms_[b->Id()]; }
+    bool IsDominator(const BasicBlock *dom, const BasicBlock *block)
+    {
+        ASSERT(block != nullptr);
+        ASSERT(dom != nullptr);
+        
+        if (dom == block) {
+            return true;
+        }
+        auto idom = IDomOf(block);
+        while (block != GetEntryBlock()) {
+            if (idom == dom) {
+                return true;
+            }
+            block = idom;
+            idom = IDomOf(idom);
+        }
+        return false;
+    }
 
     void BuildRPO();
     const auto &GetRPO() { return rpo_; }
+
+    void AnalyzeLoops();
+    void SetRootLoop(Loop *l);
+    auto RootLoop()
+    {
+        return root_loop_;
+    }
+
     void DumpRPO() const;
     void Dump() const;
 
@@ -61,9 +91,11 @@ public:
 
 private:
     size_t inst_id_{};
+    size_t loop_id_{};
     Vector<BasicBlock> blocks_{};
     Vector<BasicBlock *> rpo_{};
     Vector<BasicBlock *> idoms_{};
+    Loop *root_loop_{};
     Marker marker_;
 };
 

@@ -8,9 +8,9 @@ cd jit
 mkdir ir/graph/gen
 ruby ./ir/ir_parser.rb
 
-g++ -std=c++17 sample.cpp ir/graph/graph.cpp ir/graph/basic_block.cpp ir/graph/inst.cpp -o sample
+clang++-14 -std=c++17 sample.cpp ir/graph/graph.cpp ir/graph/basic_block.cpp ir/graph/instructions.cpp -o sample
 
 ./sample
 ```
 
-Note: `ir/graph/gen` directory and its contents is present in the source code for convenience and will be removed later. 
+Note: `ir/graph/gen` directory and its contents is present in the source code for convenience and will be removed later.

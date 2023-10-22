@@ -25,7 +25,10 @@ private:
         idoms_.resize(blocks_count);
         size_t idx = 0;
         DFS(graph_->GetEntryBlock(), &idx);
-        ASSERT((blocks_count == blocks_count) && "There are unreachable blocks");
+        if (blocks_count == idx) {
+            // There are unreachable blocks.
+            UNREACHABLE();
+        }
         ASSERT(v_numbers_[0] == 1);
     }
     void DFS(BasicBlock *bb, size_t *idx)
@@ -71,7 +74,6 @@ private:
                 mark_ = graph_->NewMarker();
                 ASSERT(NumOf(bb) < NumOf(pred));
                 semidom_tmp = FindPredWithLessThan(NumOf(bb), pred);
-                //ASSERT(NumOf(semidom_tmp) < NumOf(bb));
             }
             if (semidom_tmp != nullptr) {
                 if ((NumOf(semidom_tmp) < NumOf(semidom)) || (semidom == nullptr)) {
@@ -82,7 +84,6 @@ private:
         }
         ASSERT(semidom != nullptr);
         semidoms_[bb->Id()] = semidom;
-        //buckets_[semidom->Id()].push_back(bb);
         return semidom;
     }
 
@@ -152,6 +153,63 @@ private:
     Vector<size_t> spanning_tree_imm_anc_;
     Vector<BasicBlock *> idoms_;
     Marker mark_;
+};
+
+// This class is intended to check the result of the algorithm.
+// It builds DomTree via block-exclusion and check dominators found 
+// with the main algorithm.
+class DomTreeCheck {
+public:
+    DomTreeCheck(Graph *graph) : graph_(graph)
+    {
+        reached_blocks_.resize(graph_->GetBlocksCount());
+        all_blocks_.resize(graph_->GetBlocksCount());
+        
+        CollectBlocks(graph_->GetEntryBlock());
+        std::swap(reached_blocks_, all_blocks_);
+        
+        for (size_t i = 0; i < all_blocks_.size(); i++) {
+            ASSERT(all_blocks_[i] != nullptr);
+            ASSERT(all_blocks_[i]->Id() == i);
+            ignored_block_ = all_blocks_[i];
+            CollectBlocks(graph_->GetEntryBlock());
+            for (size_t j = 0; j < reached_blocks_.size(); j++) {
+                if (reached_blocks_[j] == nullptr) {
+                    auto unreached_block = graph_->GetBlockById(j);
+                    ASSERT(graph_->IsDominator(ignored_block_, unreached_block));
+                }
+            }
+            reached_blocks_.clear();
+            reached_blocks_.resize(all_blocks_.size());
+        }
+    }
+    
+    void CollectBlocks(BasicBlock *bb)
+    {
+        ASSERT(bb != nullptr);
+
+        reached_blocks_[bb->Id()] = bb;
+
+        for (auto *succ : bb->Succs()) {
+            if (!IsCollected(succ) && (succ != ignored_block_)) {
+                CollectBlocks(succ);
+            }
+        }
+    }
+    bool IsCollected(BasicBlock *block)
+    {
+        ASSERT(block != nullptr);
+        if (reached_blocks_[block->Id()] != nullptr) {
+            ASSERT(reached_blocks_[block->Id()] == block);
+            return true;
+        }
+        return false;
+    }
+private:
+    Graph *graph_{};
+    Vector<BasicBlock *> all_blocks_{};
+    Vector<BasicBlock *> reached_blocks_{};
+    BasicBlock *ignored_block_{};
 };
 
 }

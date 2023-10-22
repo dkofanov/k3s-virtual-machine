@@ -80,8 +80,10 @@ def TypedArgList(prefix1, prefix2, count)
 end
 
 IR = IRDesc.new(YAML.load_file("ir/ir.yaml"))
-template1 = ERB.new(File.read("ir/graph/templates/inst_ctors.h.erb"), 0, "%-")
-template2 = ERB.new(File.read("ir/graph/templates/inst.h.erb"), 0, "%-")
+t_inst_inl = ERB.new(File.read("ir/graph/inst.inl.erb"), 0, "%-")
+t_instructions_inl = ERB.new(File.read("ir/graph/instructions.inl.erb"), 0, "%-")
+t_graph_ctor = ERB.new(File.read("ir/graph/graph_ctor.h.erb"), 0, "%-")
 
-File.write("ir/graph/gen/inst_ctors_gen.h", template1.result)
-File.write("ir/graph/gen/inst_gen.h", template2.result)
+File.write("ir/graph/gen/inst.inl", t_inst_inl.result)
+File.write("ir/graph/gen/instructions.inl", t_instructions_inl.result)
+File.write("ir/graph/gen/graph_ctor.h", t_graph_ctor.result)

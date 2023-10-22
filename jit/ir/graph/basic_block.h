@@ -1,9 +1,11 @@
 #pragma once
 #include "marker.h"
 #include "../../common.h"
-#include "gen/inst_gen.h"
+#include "instructions.h"
 
 namespace compiler {
+
+class Loop;
 
 class BasicBlock : public Marker
 {
@@ -40,6 +42,9 @@ public:
         return succs_;
     }
 
+    void SetLoop(Loop *l) { loop_ = l; }
+    auto Loop() const { return loop_; }
+    bool IsHeader() const;
     // TBD: impl InsertInst();
 
     void PushFront(Inst *inst)
@@ -87,27 +92,7 @@ public:
 
     bool CheckValid() const;
     
-    void Dump() const
-    {
-        std::cout << "    // Preds: { ";
-        for (auto i : preds_) {
-            std::cout << "b" << i->Id() << " ";
-        }
-        std::cout << "}\n";
-
-        auto cur = first_inst_; 
-        do {
-            cur->Dump();
-            cur = cur->Next();
-        } while (cur != nullptr);
-        
-        std::cout << "    // Succs: { ";
-        for (auto i : succs_) {
-            std::cout << "b" << i->Id() << " ";
-        }
-        std::cout << "}\n";
-    }
-
+    void Dump() const;
     auto FirstInst() { return first_inst_; }
 
     using PredsT = Vector<BasicBlock *>;
@@ -116,6 +101,7 @@ private:
     // TBD: separate first-Phi last-Phi;
     Inst *first_inst_ {};
     Inst *last_inst_ {};
+    class Loop *loop_;
     PredsT preds_;
     SuccsT succs_;
     size_t id_;

@@ -8,93 +8,7 @@ namespace compiler {
 class BasicBlock;
 class User;
 
-class Inst {
-public:
-    enum Opcode {
-        NONE,
-% IR.instructions.each do |inst|
-        <%= inst.opcode.upcase %>,
-% end
-    };
-
-% IR.instructions.each do |inst|
-    bool Is<%= inst.opcode %>() const { return opcode_ == <%= inst.opcode.upcase %>; }
-    auto As<%= inst.opcode %>();
-% end
-
-    Inst(Opcode opcode);
-
-    Inst *GetInput(size_t i);
-    size_t GetInputsCount();
-
-    void Dump();
-
-    auto GetOpcode()
-    {
-        return opcode_;
-    }
-
-    void SetNext(Inst *next)
-    {
-        ASSERT(next_ == nullptr);
-        next_ = next;
-        ASSERT(next->prev_ == nullptr);
-        next->prev_ = this;
-    }
-    Inst *Next()
-    {
-        return next_;
-    }
-    
-    auto Id() const
-    {
-        return id_;
-    }
-    
-    auto BB() { return bb_; }
-    size_t GetBBId();
-    void SetBB(BasicBlock *bb) { bb_ = bb; }
-
-private:
-    auto GetFirstUserRef()
-    {
-        return &first_user_;
-    }
-
-    bool IsFixed()
-    {
-        switch (opcode_) {
-% IR.instructions.each do |inst|
-%   if not inst.is_fixed?
-        case <%= inst.opcode.upcase %>:
-%   end
-% end
-            return false;
-        default:
-            return true;
-        }
-    }
-    
-private:
-    static constexpr uint8_t INPUTS_COUNT_ARRAY[] =
-    {
-        (uint8_t) -1,
-% IR.instructions.each do |inst|
- (uint8_t) <%=  inst.argc.to_s + ', ' -%>
-% end
-    
-    };
-
-private:
-    Opcode opcode_{};
-    size_t id_{};
-    BasicBlock *bb_{};
-    User *first_user_{};
-    Inst *prev_{};
-    Inst *next_{};
-
-friend class User;
-};
+#include "gen/inst.inl"
 
 class TypedMixin {
 public:
@@ -118,9 +32,11 @@ public:
     }
 
     TypedMixin(Type type) : type_{type} {}
+
 private:
     Type type_;
 };
+
 using Type = TypedMixin::Type;
 
 class ImmediateMixin {
@@ -134,8 +50,8 @@ public:
 private:
     uint64_t imm_;
 };
-using Type = TypedMixin::Type;
 
+using Type = TypedMixin::Type;
 
 class ConditionalMixin {
 public:
@@ -145,6 +61,7 @@ public:
         GT,
         GE,
     }; 
+
     const auto *ToString() const
     {
         switch (cond_) {
@@ -162,9 +79,11 @@ public:
     }
 
     ConditionalMixin(If cond) : cond_{cond} {}
+
 private:
     If cond_;
 };
+
 using If = ConditionalMixin::If;
 
 class User {
@@ -227,7 +146,6 @@ public:
         return reinterpret_cast<User *>(next_or_inst_);
     }
     
-
     void ReplaceUserWith(Inst *inst)
     {
         ASSERT(!IsSpecial());
@@ -289,6 +207,7 @@ private:
     {
         return (word & MASK) == MASK; 
     }
+
 private:
     static constexpr uintptr_t MASK = 0xFF00'0000'0000'0000;
     uintptr_t next_or_inst_;
@@ -334,6 +253,7 @@ public:
     {
         return inputs_[idx];
     }
+
     auto &DumpDF()
     {
         ASSERT(inputs_[0] != nullptr);
@@ -344,6 +264,7 @@ public:
         }
         return std::cout << " }";
     }
+
 private:
     Inst* inputs_[INPUTS_COUNT] {};
     User users_[INPUTS_COUNT + 1] {};
@@ -375,10 +296,9 @@ public:
         // dump users only
         return std::cout;
     }
-private:
 };
 
-// In fact, dynamic allocations occurs exactly 1 time (on initialization):
+// Currently, dynamic allocations occurs exactly 1 time (on initialization):
 class VariadicInputsInst : public Inst {
 public:
     template <typename ... Args>
@@ -401,6 +321,7 @@ public:
         }
         inputs_[IDX] = inst;
     }
+
     void SetInput(size_t idx, Inst *inst)
     {
         ASSERT(idx < inputs_.size());
@@ -425,6 +346,7 @@ public:
         ASSERT(inputs_.size() == (users_.size() - 1));
         return inputs_.size();
     }
+
     auto &DumpDF()
     {
         ASSERT(inputs_[0] != nullptr);
@@ -441,48 +363,7 @@ private:
     std::vector<User> users_ {};
 };
 
-
-% IR.instructions.each do |inst|
-class <%= inst.opcode %>Inst : <%= inst.inheritance_list %>
-{
-public:
-    template <<%= ArgList("typename Arg", inst.mixins.length) + "#{inst.mixins.length == 0 ? "" : ","}" %> typename unused = void>
-    <%= inst.opcode %>Inst(<%= inst.append_argc %> <%= TypedArgList("Arg", "&&arg", inst.mixins.length) %>)
-    : <%= inst.base_class_name %>(<%= inst.append_argc(false) %><%= inst.opcode.upcase %>)
-% inst.mixins.each_with_index do |mixin, idx|
-    , <%= mixin %>Mixin(arg<%= idx %>)
-% end 
-    {}
-
-    auto &Dump() 
-    {
-        std::ios state(nullptr);
-        state.copyfmt(std::cout);
-        
-        std::cout <<  "        " << std::setw(20) << std::left <<  "<%= inst.opcode.upcase %>" << std::setw(0) << "(" ;
-        <%= AppendSuffix(inst.mixins, "Mixin::Dump()", "<< \", \"; ") + ";" %> 
-        std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
-        DumpDF();
-        std::cout.copyfmt(state);
-        return std::cout << ";\n";
-    } 
-};
-inline auto Inst::As<%= inst.opcode %>()
-{
-    return static_cast<<%= inst.opcode %>Inst *>(this);
-}
-% end
-
-inline void Inst::Dump()
-{
-    switch (opcode_) {
-% IR.instructions.each do |inst|
-    case <%= inst.opcode.upcase %>: As<%= inst.opcode %>()->Dump(); break;
-% end
-    default: UNREACHABLE();
-    }
-}
-
+#include "gen/instructions.inl"
 
 inline size_t Inst::GetInputsCount()
 {
@@ -493,14 +374,4 @@ inline size_t Inst::GetInputsCount()
     return static_cast<VariadicInputsInst *>(this)->GetInputsCount(); 
 }
 
-inline Inst *Inst::GetInput(size_t i)
-{
-    switch (opcode_) {
-% IR.instructions.each do |inst|
-    case <%= inst.opcode.upcase %>: return As<%= inst.opcode %>()->GetInput(i);
-% end
-    default:
-        UNREACHABLE();
-    }
-}
 }

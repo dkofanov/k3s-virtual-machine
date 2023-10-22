@@ -1,0 +1,54 @@
+
+% IR.instructions.each do |inst|
+class <%= inst.opcode %>Inst : <%= inst.inheritance_list %>
+{
+public:
+    template <<%= ArgList("typename Arg", inst.mixins.length) + "#{inst.mixins.length == 0 ? "" : ","}" %> typename unused = void>
+    <%= inst.opcode %>Inst(<%= inst.append_argc %> <%= TypedArgList("Arg", "&&arg", inst.mixins.length) %>)
+    : <%= inst.base_class_name %>(<%= inst.append_argc(false) %><%= inst.opcode.upcase %>)
+% inst.mixins.each_with_index do |mixin, idx|
+    , <%= mixin %>Mixin(arg<%= idx %>)
+% end 
+    {}
+
+    auto &Dump() 
+    {
+        std::ios state(nullptr);
+        state.copyfmt(std::cout);
+        
+        std::cout <<  "        " << std::setw(20) << std::left <<  "<%= inst.opcode.upcase %>" << std::setw(0) << "(" ;
+        <%= AppendSuffix(inst.mixins, "Mixin::Dump()", "<< \", \"; ") + ";" %> 
+        std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
+        DumpDF();
+        std::cout.copyfmt(state);
+        return std::cout << ";\n";
+    } 
+};
+
+inline auto Inst::As<%= inst.opcode %>()
+{
+    return static_cast<<%= inst.opcode %>Inst *>(this);
+}
+
+% end
+
+inline void Inst::Dump()
+{
+    switch (opcode_) {
+% IR.instructions.each do |inst|
+    case <%= inst.opcode.upcase %>: As<%= inst.opcode %>()->Dump(); break;
+% end
+    default: UNREACHABLE();
+    }
+}
+
+inline Inst *Inst::GetInput(size_t i)
+{
+    switch (opcode_) {
+% IR.instructions.each do |inst|
+    case <%= inst.opcode.upcase %>: return As<%= inst.opcode %>()->GetInput(i);
+% end
+    default:
+        UNREACHABLE();
+    }
+}
