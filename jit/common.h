@@ -13,4 +13,4 @@ template<typename T>
 using List = std::list<T>;
 
 #define ASSERT(...) assert(__VA_ARGS__)
-#define UNREACHABLE() __builtin_unreachable(); abort()
+#define UNREACHABLE()  abort();

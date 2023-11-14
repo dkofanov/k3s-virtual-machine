@@ -25,7 +25,8 @@ private:
         idoms_.resize(blocks_count);
         size_t idx = 0;
         DFS(graph_->GetEntryBlock(), &idx);
-        if (blocks_count == idx) {
+
+        if (blocks_count != idx) {
             // There are unreachable blocks.
             UNREACHABLE();
         }

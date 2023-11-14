@@ -58,9 +58,8 @@ public:
 
     void Dump() { GRAPH->GetBlockById(bb_id_)->Dump(); }
     auto GetBB() const { return GRAPH->GetBlockById(bb_id_); }
-    operator BasicBlock*() { return GetBB(); } 
-    BasicBlock *operator->() { return GetBB(); } 
-
+    operator BasicBlock*() { return GetBB(); }
+    BasicBlock *operator->() { return GetBB(); }
     class PredSuccDeclarator
     {
     public:
@@ -139,10 +138,13 @@ public:
     auto operator--(int) { return PredSuccDeclarator(bb_id_); }
     auto operator,(BlockCtorBase &second_b) { return PredSuccDeclarator(bb_id_, second_b.GetBB()->Id()); }
 
+    operator const BasicBlock*() { return GetBB(); } 
 public:
     size_t bb_id_;
     std::string_view lbl_;
 };
+//bool operator==(const BasicBlock *lhs, const BlockCtorBase& rhs) { return lhs == rhs.GetBB(); }
+//bool operator==(const BlockCtorBase& lhs, const BasicBlock * rhs) { return rhs == lhs; }
 
 #define DECL_CLASS_REC(SUFX, BASE, ...)
 
