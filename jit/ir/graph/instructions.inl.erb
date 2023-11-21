@@ -11,6 +11,7 @@ public:
 % end 
     {}
 
+    template <bool DUMP_LIVENESS = false>
     auto &Dump() 
     {
         std::ios state(nullptr);
@@ -21,7 +22,9 @@ public:
         std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
         DumpDF();
         std::cout.copyfmt(state);
-        return std::cout << ";\n";
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
     } 
 };
 
@@ -30,13 +33,18 @@ inline auto Inst::As<%= inst.opcode %>()
     return static_cast<<%= inst.opcode %>Inst *>(this);
 }
 
+inline auto Inst::As<%= inst.opcode %>() const
+{
+    return static_cast<const <%= inst.opcode %>Inst *>(this);
+}
 % end
 
+template <bool DUMP_LIVENESS>
 inline void Inst::Dump()
 {
     switch (opcode_) {
 % IR.instructions.each do |inst|
-    case <%= inst.opcode.upcase %>: As<%= inst.opcode %>()->Dump(); break;
+    case <%= inst.opcode.upcase %>: As<%= inst.opcode %>()->Dump<DUMP_LIVENESS>(); break;
 % end
     default: UNREACHABLE();
     }
@@ -47,6 +55,17 @@ inline Inst *Inst::GetInput(size_t i)
     switch (opcode_) {
 % IR.instructions.each do |inst|
     case <%= inst.opcode.upcase %>: return As<%= inst.opcode %>()->GetInput(i);
+% end
+    default:
+        UNREACHABLE();
+    }
+}
+
+inline Span<Inst *> Inst::GetInputs()
+{
+    switch (opcode_) {
+% IR.instructions.each do |inst|
+    case <%= inst.opcode.upcase %>: return As<%= inst.opcode %>()->GetInputs();
 % end
     default:
         UNREACHABLE();

@@ -1,5 +1,5 @@
 #include "basic_block.h"
-#include "analyses/loop_analyzer.h"
+#include "analyses/loop.h"
 
 namespace compiler {
 
@@ -35,6 +35,7 @@ bool BasicBlock::IsHeader() const
     return loop_->Header() == this;
 }
 
+template <bool DUMP_LIVENESS>
 void BasicBlock::Dump() const
 {
     std::cout << "    // Loop: " << loop_->Id() << "\n";
@@ -44,11 +45,9 @@ void BasicBlock::Dump() const
     }
     std::cout << "}\n";
 
-    auto cur = first_inst_; 
-    do {
-        cur->Dump();
-        cur = cur->Next();
-    } while (cur != nullptr);
+    for (auto cur : GetAllInsts()) {       
+        cur->Dump<DUMP_LIVENESS>();
+    }
         
     std::cout << "    // Succs: { ";
     for (auto i : succs_) {
@@ -56,4 +55,11 @@ void BasicBlock::Dump() const
     }
     std::cout << "}\n";
 }
+
+template
+void BasicBlock::Dump<true>() const;
+
+template
+void BasicBlock::Dump<false>() const;
+
 }

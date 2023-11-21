@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../graph.h"
 
 namespace compiler {
@@ -15,10 +17,11 @@ public:
     {
         return std::move(idoms_);
     }
+
 private:
     void EnumerateBlocks()
     {
-        size_t blocks_count = graph_->GetBlocksCount();
+        size_t blocks_count = graph_->GetBlocksMaxId();
         v_numbers_.resize(blocks_count);
         sorted_.resize(blocks_count);
         spanning_tree_imm_anc_.resize(blocks_count);
@@ -32,6 +35,7 @@ private:
         }
         ASSERT(v_numbers_[0] == 1);
     }
+
     void DFS(BasicBlock *bb, size_t *idx)
     {
         ASSERT(bb != nullptr);
@@ -163,8 +167,8 @@ class DomTreeCheck {
 public:
     DomTreeCheck(Graph *graph) : graph_(graph)
     {
-        reached_blocks_.resize(graph_->GetBlocksCount());
-        all_blocks_.resize(graph_->GetBlocksCount());
+        reached_blocks_.resize(graph_->GetBlocksMaxId());
+        all_blocks_.resize(graph_->GetBlocksMaxId());
         
         CollectBlocks(graph_->GetEntryBlock());
         std::swap(reached_blocks_, all_blocks_);

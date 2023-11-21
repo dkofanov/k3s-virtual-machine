@@ -1,7 +1,7 @@
 #pragma once
 #include "../graph.h"
 #include "../../../common.h"
-#include "../analyses/loop_analyzer.h"
+#include "../analyses/loop.h"
 #include <string_view>
 #include <initializer_list>
 
@@ -85,7 +85,7 @@ public:
                 auto succ_bb = succ.GetBB();
                 GRAPH->GetBlockById(id)->SetSucc(succ_bb);
                 size_t input_idx = succ_bb->Preds().size() - 1;
-                auto inst = succ_bb->FirstInst();
+                Inst *inst = succ_bb->FirstPhi();
                 for (size_t i = 0; i < missing_phi_inputs_.size(); i++) {
                     ASSERT(inst->IsPhi());
                     auto phi = inst->AsPhi();
@@ -143,8 +143,6 @@ public:
     size_t bb_id_;
     std::string_view lbl_;
 };
-//bool operator==(const BasicBlock *lhs, const BlockCtorBase& rhs) { return lhs == rhs.GetBB(); }
-//bool operator==(const BlockCtorBase& lhs, const BasicBlock * rhs) { return rhs == lhs; }
 
 #define DECL_CLASS_REC(SUFX, BASE, ...)
 
@@ -178,11 +176,7 @@ __VA_ARGS__;                                \
         void AppendInst()                                                                                   \
         {                                                                                                   \
             auto inst = this->inst_;                                                                        \
-            if (inst->IsPhi()) {                                                                            \
-                GRAPH->GetBlockById()->PushFront(inst);                                                     \
-            } else {                                                                                        \
-                GRAPH->GetBlockById()->PushBack(inst);                                                      \
-            }                                                                                               \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
         }                                                                                                   \
         ConstInst_##LINE##_ctor (const ConstInst_##LINE##_ctor &) = delete;       \
         ConstInst_##LINE##_ctor (ConstInst_##LINE##_ctor &&) = delete;            \
@@ -217,11 +211,7 @@ __VA_ARGS__;                                \
         void AppendInst()                                                                                   \
         {                                                                                                   \
             auto inst = this->inst_;                                                                        \
-            if (inst->IsPhi()) {                                                                            \
-                GRAPH->GetBlockById()->PushFront(inst);                                                     \
-            } else {                                                                                        \
-                GRAPH->GetBlockById()->PushBack(inst);                                                      \
-            }                                                                                               \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
         }                                                                                                   \
         AddInst_##LINE##_ctor (const AddInst_##LINE##_ctor &) = delete;       \
         AddInst_##LINE##_ctor (AddInst_##LINE##_ctor &&) = delete;            \
@@ -251,11 +241,7 @@ __VA_ARGS__;                                \
         void AppendInst()                                                                                   \
         {                                                                                                   \
             auto inst = this->inst_;                                                                        \
-            if (inst->IsPhi()) {                                                                            \
-                GRAPH->GetBlockById()->PushFront(inst);                                                     \
-            } else {                                                                                        \
-                GRAPH->GetBlockById()->PushBack(inst);                                                      \
-            }                                                                                               \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
         }                                                                                                   \
         SubInst_##LINE##_ctor (const SubInst_##LINE##_ctor &) = delete;       \
         SubInst_##LINE##_ctor (SubInst_##LINE##_ctor &&) = delete;            \
@@ -285,11 +271,7 @@ __VA_ARGS__;                                \
         void AppendInst()                                                                                   \
         {                                                                                                   \
             auto inst = this->inst_;                                                                        \
-            if (inst->IsPhi()) {                                                                            \
-                GRAPH->GetBlockById()->PushFront(inst);                                                     \
-            } else {                                                                                        \
-                GRAPH->GetBlockById()->PushBack(inst);                                                      \
-            }                                                                                               \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
         }                                                                                                   \
         MulInst_##LINE##_ctor (const MulInst_##LINE##_ctor &) = delete;       \
         MulInst_##LINE##_ctor (MulInst_##LINE##_ctor &&) = delete;            \
@@ -319,11 +301,7 @@ __VA_ARGS__;                                \
         void AppendInst()                                                                                   \
         {                                                                                                   \
             auto inst = this->inst_;                                                                        \
-            if (inst->IsPhi()) {                                                                            \
-                GRAPH->GetBlockById()->PushFront(inst);                                                     \
-            } else {                                                                                        \
-                GRAPH->GetBlockById()->PushBack(inst);                                                      \
-            }                                                                                               \
+            GRAPH->GetBlockById()->PushPhi(inst);                                                           \
         }                                                                                                   \
         PhiInst_##LINE##_ctor (const PhiInst_##LINE##_ctor &) = delete;       \
         PhiInst_##LINE##_ctor (PhiInst_##LINE##_ctor &&) = delete;            \
@@ -353,11 +331,7 @@ __VA_ARGS__;                                \
         void AppendInst()                                                                                   \
         {                                                                                                   \
             auto inst = this->inst_;                                                                        \
-            if (inst->IsPhi()) {                                                                            \
-                GRAPH->GetBlockById()->PushFront(inst);                                                     \
-            } else {                                                                                        \
-                GRAPH->GetBlockById()->PushBack(inst);                                                      \
-            }                                                                                               \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
         }                                                                                                   \
         JmpInst_##LINE##_ctor (const JmpInst_##LINE##_ctor &) = delete;       \
         JmpInst_##LINE##_ctor (JmpInst_##LINE##_ctor &&) = delete;            \
@@ -387,11 +361,7 @@ __VA_ARGS__;                                \
         void AppendInst()                                                                                   \
         {                                                                                                   \
             auto inst = this->inst_;                                                                        \
-            if (inst->IsPhi()) {                                                                            \
-                GRAPH->GetBlockById()->PushFront(inst);                                                     \
-            } else {                                                                                        \
-                GRAPH->GetBlockById()->PushBack(inst);                                                      \
-            }                                                                                               \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
         }                                                                                                   \
         ParameterInst_##LINE##_ctor (const ParameterInst_##LINE##_ctor &) = delete;       \
         ParameterInst_##LINE##_ctor (ParameterInst_##LINE##_ctor &&) = delete;            \
@@ -426,11 +396,7 @@ __VA_ARGS__;                                \
         void AppendInst()                                                                                   \
         {                                                                                                   \
             auto inst = this->inst_;                                                                        \
-            if (inst->IsPhi()) {                                                                            \
-                GRAPH->GetBlockById()->PushFront(inst);                                                     \
-            } else {                                                                                        \
-                GRAPH->GetBlockById()->PushBack(inst);                                                      \
-            }                                                                                               \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
         }                                                                                                   \
         ReturnInst_##LINE##_ctor (const ReturnInst_##LINE##_ctor &) = delete;       \
         ReturnInst_##LINE##_ctor (ReturnInst_##LINE##_ctor &&) = delete;            \

@@ -2,6 +2,7 @@
 #include "../../common.h"
 #include "marker.h"
 #include "basic_block.h"
+#include "analyses/live_intervals.h"
 
 namespace compiler {
 
@@ -28,10 +29,11 @@ public:
     {
         inst_id_++;
         return inst_id_;
+    }    
+    auto GetBlocksMaxId()
+    {
+        return blocks_.size();
     }
-
-    Loop *NewLoop(BasicBlock *header = nullptr);
-
     auto GetBlocksCount()
     {
         return blocks_.size();
@@ -77,26 +79,58 @@ public:
     void BuildRPO();
     const auto &GetRPO() { return rpo_; }
 
+    Loop *NewLoop(BasicBlock *header = nullptr);
     void AnalyzeLoops();
+    void SetIrreducible()
+    {
+        reducible_ = false;
+    }
+    bool IsReducible()
+    {
+        return reducible_;
+    }
+    bool IsLoopAnalysisValid();
     void SetRootLoop(Loop *l);
     auto RootLoop()
     {
         return root_loop_;
     }
 
+    void BuildLinearOrder();
+    bool IsLinearOrderValid() const;
+    const auto &GetLinearOrder()
+    {
+        return linear_order_;
+    }
+    auto MaxLifeNumber() const
+    {
+        return max_life_number_;
+    }
+
+    void BuildLiveness();
+
     void DumpRPO() const;
+    void DumpLiveness() const;
     void Dump() const;
 
     auto NewMarker() { return marker_.NewMarker(); }
 
 private:
     size_t inst_id_{};
-    size_t loop_id_{};
-    Vector<BasicBlock> blocks_{};
-    Vector<BasicBlock *> rpo_{};
-    Vector<BasicBlock *> idoms_{};
-    Loop *root_loop_{};
     Marker marker_;
+    Vector<BasicBlock> blocks_{};
+    
+    Vector<BasicBlock *> rpo_{};
+    
+    Vector<BasicBlock *> idoms_{};
+    
+    size_t loop_id_{};
+    Loop *root_loop_{};
+    bool reducible_{true};
+    
+    Vector<BasicBlock *> linear_order_{};
+    size_t max_life_number_{};
+    UnorderedMap<const Inst *, LiveIntervals> insts_live_intervals_{};
 };
 
 

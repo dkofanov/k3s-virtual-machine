@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../graph.h"
 #include <algorithm>
 #include <string>
@@ -62,25 +64,33 @@ public:
         for (auto l : inner_) {
             l->Dump(rec_lvl + 1);
         }
+        if (header_ != nullptr) {
         std::cout << pref << "  Header: " << header_->Id() << "\n";
         std::cout << pref << "  BackEdges:\n";
         for (auto b : back_edges_) {
         std::cout << pref << "    " << b->Id() << "\n";
         }
         std::cout << pref << "  Reducible: " << reducible_ << "\n";
+        } else {
+            std::cout << pref << "  Is root" << "\n";
+
+        }
     }
     
     auto Id() const
     {
         return id_;
     }
-
+    bool IsBackEdge(const BasicBlock *b) const
+    {
+        return std::find(back_edges_.begin(), back_edges_.end(), b) != back_edges_.end();
+    }
 private:
     Loop(BasicBlock *header, size_t id) : header_(header), id_(id) {}
 
     void AppendBackEdge(BasicBlock *edge)
     {
-        ASSERT(std::find(back_edges_.begin(), back_edges_.end(), edge) == back_edges_.end());
+        ASSERT(!IsBackEdge(edge));
         ASSERT(edge->Loop() == nullptr);
         back_edges_.push_back(edge);
         edge->SetLoop(this);
@@ -114,13 +124,15 @@ public:
         CollectBackEdges();
         PopulateBlocks();
         CreateRoot();
+        PopulateIrreducible();
     }
 
     void CollectBackEdges()
     {
         DFSBackEdges(graph_->GetEntryBlock());
     }
-
+// TODO: Investigate what does the following comment mean:
+/// DEBUG- MARK -ASSERT HAS LOOP 
     void DFSBackEdges(BasicBlock *edge)
     {
         MarkGB(edge);
@@ -158,9 +170,9 @@ public:
                     DFSPopulateBlocks(l, edge);
                 } else {
                     l->SetReducible(false);
+                    graph_->SetIrreducible();
                 }
             }
-
         }
     }
 
@@ -174,6 +186,7 @@ public:
                 DFSPopulateBlocks(l, pred);
             } else if ((pred->Loop() != l) && b != pred->Loop()->Header()) {
                 pred->Loop()->SetOuter(l);
+                // Skip inner loop and resume at the header:
                 DFSPopulateBlocks(l, pred->Loop()->Header());
             }
         }
@@ -191,16 +204,44 @@ public:
         }
         graph_->SetRootLoop(root_loop);
     }
+    
+    void PopulateIrreducible()
+    {
+        // Reset marker:
+        b_ = graph_->NewMarker();
+        for (auto b : graph_->GetRPO()) {
+            MarkB(b);
+            if (!b->IsHeader() || b->Loop()->Reducible()) {
+                continue;
+            }
+            DFSIrreducible(b);
+        }
+    }
+
+    void DFSIrreducible(BasicBlock *b)
+    {
+        auto *l = b->Loop();
+        ASSERT(!l->Reducible());
+        for (auto *pred : b->Preds()) {
+            if (IsB(pred)) {
+                ASSERT((pred->Loop() != l) || (pred == l->Header()));
+                continue;
+            }
+            ASSERT(!b->IsHeader() ^ l->IsBackEdge(pred));
+            pred->SetLoop(l);
+            DFSIrreducible(pred);
+        }
+    }
 
 private:
     void MarkGB(BasicBlock *b) { b->Mark(gb_); }
     void MarkB(BasicBlock *b) { b->Mark(b_); }
-    bool IsGB(BasicBlock *b)
+    bool IsGB(const BasicBlock *b)
     {
         return b->IsMarked(gb_);
     }
 
-    bool IsB(BasicBlock *b) { return b->IsMarked(gb_) || b->IsMarked(b_); }
+    bool IsB(const BasicBlock *b) { return b->IsMarked(gb_) || b->IsMarked(b_); }
 private:
     Graph *graph_{};
     Marker gb_{};

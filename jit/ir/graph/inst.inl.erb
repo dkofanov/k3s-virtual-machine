@@ -9,14 +9,17 @@ public:
 
 % IR.instructions.each do |inst|
     bool Is<%= inst.opcode %>() const { return opcode_ == <%= inst.opcode.upcase %>; }
+    auto As<%= inst.opcode %>() const;
     auto As<%= inst.opcode %>();
 % end
 
     Inst(Opcode opcode);
 
     Inst *GetInput(size_t i);
+    Span<Inst *> GetInputs();
     size_t GetInputsCount();
 
+    template <bool DUMP_LIVENESS = false>
     void Dump();
 
     auto GetOpcode()
@@ -24,7 +27,7 @@ public:
         return opcode_;
     }
 
-    void SetNext(Inst *next)
+    void SetNextPrev(Inst *next)
     {
         ASSERT(next_ == nullptr);
         next_ = next;
@@ -35,6 +38,19 @@ public:
     {
         return next_;
     }
+    Inst *Prev()
+    {
+        return prev_;
+    }
+
+    void SetLifeNumber(uint32_t ln)
+    {
+        ln_ = ln;
+    }
+    auto LN() const
+    {
+        return ln_;
+    }
     
     auto Id() const
     {
@@ -44,6 +60,11 @@ public:
     auto BB() { return bb_; }
     size_t GetBBId();
     void SetBB(BasicBlock *bb) { bb_ = bb; }
+
+    bool HasUsers()
+    {
+        return first_user_ != nullptr;
+    }
 
 private:
     auto GetFirstUserRef()
@@ -77,7 +98,8 @@ private:
 
 private:
     Opcode opcode_{};
-    size_t id_{};
+    uint32_t id_{};
+    uint32_t ln_{};
     BasicBlock *bb_{};
     User *first_user_{};
     Inst *prev_{};

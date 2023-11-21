@@ -1,86 +1,6 @@
-#include "ir/graph/gen/graph_ctor.h"
+#include "../ir/graph/gen/graph_ctor.h"
 
 using namespace compiler;
-
-namespace hw0
-{
-    GRAPH(g,
-        BLOCK(entry,
-            PARAMETER(Type::FLOAT64) a0 ;
-            PARAMETER(Type::FLOAT64) a1 ;
-        );
-        
-        BLOCK(b_if,
-            ADD() s0 {entry.a0, entry.a1};
-            //ADD(s0, a0) s1;
-            //CMP(s0, s1) cmp0;
-            //BR(GT) br
-        );
-        
-        BLOCK(b_true,
-            SUB() sub {b_if.s0, b_if.s0};
-        );
-
-        BLOCK(b_false,
-            SUB() sub { b_if.s0, b_if.s0};
-        );
-    
-        BLOCK(last,
-            SUB() sub { b_false.sub, b_true.sub};
-        );
-
-        EDGES(
-            entry --> b_if --> (b_true, b_false) --> last --> b_if;
-        );
-    );
-
-
-    void test() {
-        g->BuildRPO();
-        g->BuildDomTree();
-        g->AnalyzeLoops();
-        g.Dump();
-    }
-}
-
-namespace hw1_fact {
-    GRAPH(test_fact,
-        BLOCK(start,
-            CONST(Type::INT64, 1) v0;
-            CONST(Type::INT64, 2) v1;
-            PARAMETER(Type::INT64) v2;
-        );
-        
-        BLOCK(head,
-            PHI(2) v0 {start.v0};
-            PHI(2) v1 {start.v1};
-            JMP(If::GT) j {v1, start.v2}; 
-        );
-        
-        BLOCK(body,
-            MUL() v0 {head.v0, head.v1};
-            ADD() v1 {head.v1, start.v0};
-        );
-
-        BLOCK(exit,
-            RETURN(Type::INT64) r {head.v0}; 
-        );
-
-        EDGES(
-            start --> head --> (exit, body);
-            body --(body.v0, body.v1)--> head;
-        );
-    );
-
-    void test()
-    {
-        test_fact->BuildRPO();
-        test_fact->BuildDomTree();
-        test_fact->AnalyzeLoops();
-        test_fact.Dump();
-    }
-}
-
 
 namespace hw2_hw3_doms_and_loops {
     GRAPH(g1,
@@ -123,7 +43,7 @@ namespace hw2_hw3_doms_and_loops {
         g1->AnalyzeLoops();
         g1->Dump();
         auto loop_0 = g1.A->Loop();
-        ASSERT(loop_0->Header() == g1.A);
+        ASSERT(loop_0->Header() == nullptr);
         ASSERT(loop_0->BackEdges().size() == 0);
         ASSERT(loop_0->Reducible());
 
@@ -134,6 +54,17 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(g1.E->Loop() == loop_0);
         ASSERT(g1.F->Loop() == loop_0);
         ASSERT(g1.G->Loop() == loop_0);
+
+        g1->BuildLinearOrder();
+        auto lo = g1->GetLinearOrder();
+        ASSERT(lo.size() == 7U);
+        ASSERT(lo[0] == g1.A);
+        ASSERT(lo[1] == g1.B);
+        ASSERT(lo[2] == g1.C);
+        ASSERT(lo[3] == g1.F);
+        ASSERT(lo[4] == g1.E);
+        ASSERT(lo[5] == g1.G);
+        ASSERT(lo[6] == g1.D);
         g1.BG();
     }
 
@@ -194,7 +125,7 @@ namespace hw2_hw3_doms_and_loops {
         g2->Dump();
 
         auto loop_0 = g2.A->Loop();
-        ASSERT(loop_0->Header() == g2.A);
+        ASSERT(loop_0->Header() == nullptr);
         ASSERT(loop_0->BackEdges().size() == 0);
         ASSERT(loop_0->Reducible());
         auto loop_1 = g2.B->Loop();
@@ -213,7 +144,6 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(loop_3->BackEdges()[0] == g2.F);
         ASSERT(loop_3->Reducible());
 
-
         ASSERT(g2.A->Loop() == loop_0);
         ASSERT(g2.B->Loop() == loop_1);
         ASSERT(g2.C->Loop() == loop_2);
@@ -226,6 +156,20 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(g2.J->Loop() == loop_1);
         ASSERT(g2.K->Loop() == loop_0);
 
+        g2->BuildLinearOrder();
+        auto lo = g2->GetLinearOrder();
+        ASSERT(lo.size() == 11U);
+        ASSERT(lo[0] == g2.A);
+        ASSERT(lo[1] == g2.B);
+        ASSERT(lo[2] == g2.J);
+        ASSERT(lo[3] == g2.C);
+        ASSERT(lo[4] == g2.D);
+        ASSERT(lo[5] == g2.E);
+        ASSERT(lo[6] == g2.F);
+        ASSERT(lo[7] == g2.G);
+        ASSERT(lo[8] == g2.H);
+        ASSERT(lo[9] == g2.I);
+        ASSERT(lo[10] == g2.K);
         g2.BG();
     }
     GRAPH(g3,
@@ -289,7 +233,7 @@ namespace hw2_hw3_doms_and_loops {
         g3->Dump();
 
         auto loop_0 = g3.A->Loop();
-        ASSERT(loop_0->Header() == g3.A);
+        ASSERT(loop_0->Header() == nullptr);
         ASSERT(loop_0->BackEdges().size() == 0);
         ASSERT(loop_0->Reducible());
         auto loop_1 = g3.B->Loop();
@@ -305,13 +249,28 @@ namespace hw2_hw3_doms_and_loops {
 
         ASSERT(g3.A->Loop() == loop_0);
         ASSERT(g3.B->Loop() == loop_1);
-        ASSERT(g3.C->Loop() == loop_0);
+        ASSERT(g3.C->Loop() == loop_2);
         ASSERT(g3.D->Loop() == loop_2);
         ASSERT(g3.E->Loop() == loop_1);
         ASSERT(g3.F->Loop() == loop_1);
         ASSERT(g3.G->Loop() == loop_2);
         ASSERT(g3.H->Loop() == loop_0);
         ASSERT(g3.I->Loop() == loop_0);
+
+        
+        g3->BuildLinearOrder();
+        auto lo = g3->GetLinearOrder();
+        ASSERT(lo.size() == 9U);
+        ASSERT(lo[0] == g3.A);
+        ASSERT(lo[1] == g3.B);
+        ASSERT(lo[2] == g3.E);
+        ASSERT(lo[3] == g3.F);
+        ASSERT(lo[4] == g3.H);
+        ASSERT(lo[5] == g3.G);
+        ASSERT(lo[6] == g3.C);
+        ASSERT(lo[7] == g3.D);
+        ASSERT(lo[8] == g3.I);
+
         g3.BG();
     }
 
@@ -320,12 +279,4 @@ namespace hw2_hw3_doms_and_loops {
         test2();
         test3();
     }
-}
-
-int main()
-{
-    hw0::test();
-    hw1_fact::test();
-    hw2_hw3_doms_and_loops::test();
-    return 0;
 }

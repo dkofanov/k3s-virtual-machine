@@ -8,7 +8,8 @@ cd jit
 mkdir ir/graph/gen
 ruby ./ir/ir_parser.rb
 
-clang++-14 -std=c++17 sample.cpp ir/graph/graph.cpp ir/graph/basic_block.cpp ir/graph/instructions.cpp -o sample
+# Build some constructor tests:
+clang++-14 -std=c++20 tests/sample.cpp ir/graph/graph.cpp ir/graph/basic_block.cpp ir/graph/instructions.cpp -o sample
 
 ./sample
 ```

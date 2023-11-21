@@ -253,6 +253,11 @@ public:
     {
         return inputs_[idx];
     }
+    
+    auto GetInputs()
+    {
+        return Span<Inst *>(inputs_);
+    }
 
     auto &DumpDF()
     {
@@ -266,8 +271,8 @@ public:
     }
 
 private:
-    Inst* inputs_[INPUTS_COUNT] {};
-    User users_[INPUTS_COUNT + 1] {};
+    std::array<Inst*, INPUTS_COUNT> inputs_ {};
+    std::array<User, INPUTS_COUNT + 1> users_ {};
 };
 
 template <>
@@ -280,6 +285,11 @@ public:
     void SetInput(Inst *inst)
     {
         UNREACHABLE();
+    }
+
+    auto GetInputs()
+    {
+        return Span<Inst *>();
     }
 
     void SetInput(size_t idx, Inst *inst)
@@ -356,6 +366,10 @@ public:
             std::cout << ", " << ((BB() == inputs_[i]->BB()) ? "" : "b" + std::to_string(inputs_[i]->GetBBId()) + ".") << "v" << inputs_[i]->Id();
         }
         return std::cout << " }";
+    }
+
+    auto GetInputs() {
+        return Span<Inst *>(inputs_.begin(), inputs_.size());
     }
 
 private:

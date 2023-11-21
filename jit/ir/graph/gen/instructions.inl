@@ -9,6 +9,7 @@ public:
     , ImmediateMixin(arg1)
     {}
 
+    template <bool DUMP_LIVENESS = false>
     auto &Dump() 
     {
         std::ios state(nullptr);
@@ -19,7 +20,9 @@ public:
         std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
         DumpDF();
         std::cout.copyfmt(state);
-        return std::cout << ";\n";
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
     } 
 };
 
@@ -28,6 +31,10 @@ inline auto Inst::AsConst()
     return static_cast<ConstInst *>(this);
 }
 
+inline auto Inst::AsConst() const
+{
+    return static_cast<const ConstInst *>(this);
+}
 class AddInst : public FixedInputsInst<2>
 {
 public:
@@ -36,6 +43,7 @@ public:
     : FixedInputsInst<2>(ADD)
     {}
 
+    template <bool DUMP_LIVENESS = false>
     auto &Dump() 
     {
         std::ios state(nullptr);
@@ -46,7 +54,9 @@ public:
         std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
         DumpDF();
         std::cout.copyfmt(state);
-        return std::cout << ";\n";
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
     } 
 };
 
@@ -55,6 +65,10 @@ inline auto Inst::AsAdd()
     return static_cast<AddInst *>(this);
 }
 
+inline auto Inst::AsAdd() const
+{
+    return static_cast<const AddInst *>(this);
+}
 class SubInst : public FixedInputsInst<2>
 {
 public:
@@ -63,6 +77,7 @@ public:
     : FixedInputsInst<2>(SUB)
     {}
 
+    template <bool DUMP_LIVENESS = false>
     auto &Dump() 
     {
         std::ios state(nullptr);
@@ -73,7 +88,9 @@ public:
         std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
         DumpDF();
         std::cout.copyfmt(state);
-        return std::cout << ";\n";
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
     } 
 };
 
@@ -82,6 +99,10 @@ inline auto Inst::AsSub()
     return static_cast<SubInst *>(this);
 }
 
+inline auto Inst::AsSub() const
+{
+    return static_cast<const SubInst *>(this);
+}
 class MulInst : public FixedInputsInst<2>
 {
 public:
@@ -90,6 +111,7 @@ public:
     : FixedInputsInst<2>(MUL)
     {}
 
+    template <bool DUMP_LIVENESS = false>
     auto &Dump() 
     {
         std::ios state(nullptr);
@@ -100,7 +122,9 @@ public:
         std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
         DumpDF();
         std::cout.copyfmt(state);
-        return std::cout << ";\n";
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
     } 
 };
 
@@ -109,6 +133,10 @@ inline auto Inst::AsMul()
     return static_cast<MulInst *>(this);
 }
 
+inline auto Inst::AsMul() const
+{
+    return static_cast<const MulInst *>(this);
+}
 class PhiInst : public VariadicInputsInst
 {
 public:
@@ -117,6 +145,7 @@ public:
     : VariadicInputsInst( inputs_count, PHI)
     {}
 
+    template <bool DUMP_LIVENESS = false>
     auto &Dump() 
     {
         std::ios state(nullptr);
@@ -127,7 +156,9 @@ public:
         std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
         DumpDF();
         std::cout.copyfmt(state);
-        return std::cout << ";\n";
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
     } 
 };
 
@@ -136,6 +167,10 @@ inline auto Inst::AsPhi()
     return static_cast<PhiInst *>(this);
 }
 
+inline auto Inst::AsPhi() const
+{
+    return static_cast<const PhiInst *>(this);
+}
 class JmpInst : public FixedInputsInst<2>, public ConditionalMixin
 {
 public:
@@ -145,6 +180,7 @@ public:
     , ConditionalMixin(arg0)
     {}
 
+    template <bool DUMP_LIVENESS = false>
     auto &Dump() 
     {
         std::ios state(nullptr);
@@ -155,7 +191,9 @@ public:
         std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
         DumpDF();
         std::cout.copyfmt(state);
-        return std::cout << ";\n";
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
     } 
 };
 
@@ -164,6 +202,10 @@ inline auto Inst::AsJmp()
     return static_cast<JmpInst *>(this);
 }
 
+inline auto Inst::AsJmp() const
+{
+    return static_cast<const JmpInst *>(this);
+}
 class ParameterInst : public FixedInputsInst<0>, public TypedMixin
 {
 public:
@@ -173,6 +215,7 @@ public:
     , TypedMixin(arg0)
     {}
 
+    template <bool DUMP_LIVENESS = false>
     auto &Dump() 
     {
         std::ios state(nullptr);
@@ -183,7 +226,9 @@ public:
         std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
         DumpDF();
         std::cout.copyfmt(state);
-        return std::cout << ";\n";
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
     } 
 };
 
@@ -192,6 +237,10 @@ inline auto Inst::AsParameter()
     return static_cast<ParameterInst *>(this);
 }
 
+inline auto Inst::AsParameter() const
+{
+    return static_cast<const ParameterInst *>(this);
+}
 class ReturnInst : public FixedInputsInst<1>, public TypedMixin
 {
 public:
@@ -201,6 +250,7 @@ public:
     , TypedMixin(arg0)
     {}
 
+    template <bool DUMP_LIVENESS = false>
     auto &Dump() 
     {
         std::ios state(nullptr);
@@ -211,7 +261,9 @@ public:
         std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
         DumpDF();
         std::cout.copyfmt(state);
-        return std::cout << ";\n";
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
     } 
 };
 
@@ -220,18 +272,23 @@ inline auto Inst::AsReturn()
     return static_cast<ReturnInst *>(this);
 }
 
+inline auto Inst::AsReturn() const
+{
+    return static_cast<const ReturnInst *>(this);
+}
 
+template <bool DUMP_LIVENESS>
 inline void Inst::Dump()
 {
     switch (opcode_) {
-    case CONST: AsConst()->Dump(); break;
-    case ADD: AsAdd()->Dump(); break;
-    case SUB: AsSub()->Dump(); break;
-    case MUL: AsMul()->Dump(); break;
-    case PHI: AsPhi()->Dump(); break;
-    case JMP: AsJmp()->Dump(); break;
-    case PARAMETER: AsParameter()->Dump(); break;
-    case RETURN: AsReturn()->Dump(); break;
+    case CONST: AsConst()->Dump<DUMP_LIVENESS>(); break;
+    case ADD: AsAdd()->Dump<DUMP_LIVENESS>(); break;
+    case SUB: AsSub()->Dump<DUMP_LIVENESS>(); break;
+    case MUL: AsMul()->Dump<DUMP_LIVENESS>(); break;
+    case PHI: AsPhi()->Dump<DUMP_LIVENESS>(); break;
+    case JMP: AsJmp()->Dump<DUMP_LIVENESS>(); break;
+    case PARAMETER: AsParameter()->Dump<DUMP_LIVENESS>(); break;
+    case RETURN: AsReturn()->Dump<DUMP_LIVENESS>(); break;
     default: UNREACHABLE();
     }
 }
@@ -247,6 +304,22 @@ inline Inst *Inst::GetInput(size_t i)
     case JMP: return AsJmp()->GetInput(i);
     case PARAMETER: return AsParameter()->GetInput(i);
     case RETURN: return AsReturn()->GetInput(i);
+    default:
+        UNREACHABLE();
+    }
+}
+
+inline Span<Inst *> Inst::GetInputs()
+{
+    switch (opcode_) {
+    case CONST: return AsConst()->GetInputs();
+    case ADD: return AsAdd()->GetInputs();
+    case SUB: return AsSub()->GetInputs();
+    case MUL: return AsMul()->GetInputs();
+    case PHI: return AsPhi()->GetInputs();
+    case JMP: return AsJmp()->GetInputs();
+    case PARAMETER: return AsParameter()->GetInputs();
+    case RETURN: return AsReturn()->GetInputs();
     default:
         UNREACHABLE();
     }

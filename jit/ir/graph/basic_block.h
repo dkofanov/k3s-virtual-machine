@@ -14,6 +14,10 @@ public:
     static constexpr size_t FALSE_SUCC_IDX = 1;
 
     BasicBlock();
+    void SetId(size_t id)
+    {
+        id_ = id;
+    }
     auto Id() const { return id_; }
 
     void SetTrueFalseSuccs(BasicBlock *t_succ, BasicBlock *f_succ)
@@ -32,6 +36,18 @@ public:
         succs_.push_back(succ);
         succ->preds_.push_back(this);
     }
+
+    size_t GetPredIdx(BasicBlock *bb) const
+    {
+        ASSERT(HasPred(bb));
+        auto it = std::find(preds_.begin(), preds_.end(), bb);
+        return it - preds_.begin();
+    }
+    bool HasPred(BasicBlock *bb) const
+    {
+        return std::find(preds_.begin(), preds_.end(), bb) != preds_.end();
+    }
+
     const auto &Preds() const
     {
         return preds_;
@@ -47,17 +63,18 @@ public:
     bool IsHeader() const;
     // TBD: impl InsertInst();
 
-    void PushFront(Inst *inst)
+    void PushPhi(PhiInst *inst)
     {
         ASSERT(inst->BB() == nullptr);
         ASSERT(inst->IsPhi());
-        if (IsEmpty()) {
+        if (IsEmpty<true>()) {
             InitEmptyBlock(inst);
             return;
         }
-        ASSERT(first_inst_ != nullptr);
-        inst->SetNext(first_inst_);
-        first_inst_ = inst;
+        ASSERT(last_phi_ != nullptr);
+        last_phi_->SetNextPrev(inst);
+        last_phi_ = inst;
+        ASSERT(last_phi_->Next() == nullptr);
         inst->SetBB(this);
     }
 
@@ -65,25 +82,41 @@ public:
     {
         ASSERT(!inst->IsPhi());
         ASSERT(inst->BB() == nullptr);
-        if (IsEmpty()) {
+        if (IsEmpty<false>()) {
             InitEmptyBlock(inst);
             return;
         }
         ASSERT(last_inst_ != nullptr);
-        last_inst_->SetNext(inst);
+        last_inst_->SetNextPrev(inst);
         last_inst_ = inst;
         inst->SetBB(this);
     }
 
+    template <bool PHI>
     bool IsEmpty() const
     {
-        ASSERT(!((first_inst_ == nullptr) ^ (last_inst_ == nullptr)));
-        return first_inst_ == nullptr;
+        if constexpr (PHI) {
+            ASSERT(!((first_phi_ == nullptr) ^ (last_phi_ == nullptr)));
+            return first_phi_ == nullptr;
+        } else {
+            ASSERT(!((first_inst_ == nullptr) ^ (last_inst_ == nullptr)));
+            return first_inst_ == nullptr;
+        }
+    }
+
+    void InitEmptyBlock(PhiInst *inst)
+    {
+        ASSERT(inst->BB() == nullptr);
+        ASSERT((first_phi_ == nullptr) && (last_phi_ == nullptr));
+        first_phi_ = inst;
+        last_phi_ = inst;
+        inst->SetBB(this);
     }
 
     void InitEmptyBlock(Inst *inst)
     {
         ASSERT(inst->BB() == nullptr);
+        ASSERT(!inst->IsPhi());
         ASSERT((first_inst_ == nullptr) && (last_inst_ == nullptr));
         first_inst_ = inst;
         last_inst_ = inst;
@@ -92,15 +125,92 @@ public:
 
     bool CheckValid() const;
     
+    template <bool DUMP_LIVENESS = false>
     void Dump() const;
-    auto FirstInst() { return first_inst_; }
+    auto FirstPhi() const { return first_phi_; }
+    auto LastPhi() const { return last_phi_; }
+    auto FirstInst() const { return first_inst_; }
+    auto LastInst() const { return last_inst_; }
 
     using PredsT = Vector<BasicBlock *>;
     using SuccsT = Vector<BasicBlock *>;
+
+    class PhiIter : public IteratorBase<PhiInst> {
+    public:
+        PhiIter(const BasicBlock *bb) : IteratorBase(bb->first_phi_) {}
+        auto begin()
+        {
+            return *this;
+        }
+        void operator++()
+        {
+            val_ = val_->Next()->AsPhi();
+        }
+    };
+
+    template <bool REVERSE = false>
+    class InstIter : public IteratorBase<Inst> {
+    public:
+        InstIter(const BasicBlock *bb) : IteratorBase(REVERSE ? bb->last_inst_ : bb->first_inst_) {}
+        auto begin()
+        {
+            return *this;
+        }
+        void operator++()
+        {
+            if constexpr (REVERSE) {
+                val_ = val_->Prev();
+            } else {
+                val_ = val_->Next();
+            }
+        }
+    };
+
+    class AllInstIter : public IteratorBase<Inst> {
+    public:
+        AllInstIter(const BasicBlock *bb) : IteratorBase(bb->first_phi_)
+        {
+            if (val_ == nullptr) {
+                val_ = bb->first_inst_;
+            }
+        }
+        auto begin()
+        {
+            return *this;
+        }
+        void operator++()
+        {
+            ASSERT(val_ != nullptr);
+            if ((val_->Next() == nullptr) && val_->IsPhi()) {
+                val_ = val_->BB()->first_inst_;
+            } else {
+                val_ = val_->Next();
+            }
+        }
+    };
+
+    auto GetPhis() const
+    {
+        return PhiIter(this);
+    }
+
+    template <bool REVERSE = false>
+    auto GetInsts() const
+    {
+        return InstIter<REVERSE>(this);
+    }
+
+    auto GetAllInsts() const
+    {
+        return AllInstIter(this);
+    }
+
 private:
     // TBD: separate first-Phi last-Phi;
-    Inst *first_inst_ {};
-    Inst *last_inst_ {};
+    PhiInst *first_phi_{};
+    PhiInst *last_phi_{};
+    Inst *first_inst_{};
+    Inst *last_inst_{};
     class Loop *loop_;
     PredsT preds_;
     SuccsT succs_;

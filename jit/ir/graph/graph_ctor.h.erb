@@ -1,7 +1,7 @@
 #pragma once
 #include "../graph.h"
 #include "../../../common.h"
-#include "../analyses/loop_analyzer.h"
+#include "../analyses/loop.h"
 #include <string_view>
 #include <initializer_list>
 
@@ -85,7 +85,7 @@ public:
                 auto succ_bb = succ.GetBB();
                 GRAPH->GetBlockById(id)->SetSucc(succ_bb);
                 size_t input_idx = succ_bb->Preds().size() - 1;
-                auto inst = succ_bb->FirstInst();
+                Inst *inst = succ_bb->FirstPhi();
                 for (size_t i = 0; i < missing_phi_inputs_.size(); i++) {
                     ASSERT(inst->IsPhi());
                     auto phi = inst->AsPhi();
@@ -178,11 +178,11 @@ __VA_ARGS__;                                \
         void AppendInst()                                                                                   \
         {                                                                                                   \
             auto inst = this->inst_;                                                                        \
-            if (inst->IsPhi()) {                                                                            \
-                GRAPH->GetBlockById()->PushFront(inst);                                                     \
-            } else {                                                                                        \
-                GRAPH->GetBlockById()->PushBack(inst);                                                      \
-            }                                                                                               \
+            <%- if inst.opcode == "Phi" -%>
+            GRAPH->GetBlockById()->PushPhi(inst);                                                           \
+            <%- else -%>
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+            <%- end -%>
         }                                                                                                   \
         <%= inst_class_name %>_##LINE##_ctor (const <%= inst_class_name %>_##LINE##_ctor &) = delete;       \
         <%= inst_class_name %>_##LINE##_ctor (<%= inst_class_name %>_##LINE##_ctor &&) = delete;            \
