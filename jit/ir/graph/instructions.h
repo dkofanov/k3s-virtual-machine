@@ -15,8 +15,12 @@ class User;
 class TypedMixin {
 public:
     enum class Type {
+        UNKNOWN,
         FLOAT64,
         INT64,
+        INT32,
+        UINT64,
+        UINT32,
     };
 
     const auto *ToString() const
@@ -35,8 +39,61 @@ public:
 
     TypedMixin(Type type) : type_{type} {}
 
-private:
+    auto GetType() const
+    {
+        return type_;
+    }
+    auto GetSizeInBits() const
+    {
+        switch (type_) {
+            case Type::FLOAT64:
+            case Type::INT64:
+            case Type::UINT64:
+                return 64;
+            case Type::INT32:
+                return 32;
+            default:
+                UNREACHABLE();
+        }
+    }
+    
+    auto IsFloat() const
+    {
+        switch (type_) {
+            case Type::FLOAT64:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    auto GetDownCastType(size_t size_diff) const
+    {
+        ASSERT(!IsFloat());
+        ASSERT(size_diff == 32U);
+        switch (type_) {
+            case Type::INT64: return Type::INT32;
+            case Type::UINT64: return Type::UINT32;
+            default:
+                UNREACHABLE();
+        }
+    }
+
+protected:
     Type type_;
+};
+class ImplicitlyTypedMixin : public TypedMixin {
+public:
+    ImplicitlyTypedMixin() : TypedMixin(Type::UNKNOWN) {}
+    
+    void SetType(Type type)
+    {
+        type_ = type;
+    }
+    auto &Dump()
+    {
+        return std::cout;
+    }
 };
 
 using Type = TypedMixin::Type;
@@ -46,6 +103,10 @@ public:
     auto &Dump()
     {
         return std::cout << imm_;
+    }
+    auto GetImm() const
+    {
+        return imm_;
     }
 
     ImmediateMixin(uint64_t imm) : imm_{imm} {}
@@ -97,7 +158,18 @@ public:
         return inst;
     }
 
-    Inst *GetUserInst() const
+    void SetInput(Inst *new_input) const
+    {
+        const User *sp_user = FindSpecialUser();
+        auto inst = sp_user->ExtractPointerToInst();
+        size_t inputs_count = inst->GetInputsCount();
+        // This idx is also corresponds to the input:
+        size_t user_idx = inputs_count - (sp_user - this);
+        ASSERT(inst->GetInput(user_idx) != inst);
+        inst->SetInput<false>(user_idx, new_input);
+    }
+    
+    Inst *GetCorrespondingInputInst() const
     {
         const User *sp_user = FindSpecialUser();
         auto inst = sp_user->ExtractPointerToInst();
@@ -112,7 +184,7 @@ public:
 
     User **GetFirstUserRef() const
     {
-        return GetUserInst()->GetFirstUserRef();
+        return GetCorrespondingInputInst()->GetFirstUserRef();
     }
 
     void InitAsPointerToInst(Inst *inst)
@@ -173,10 +245,21 @@ public:
     void AppendUseOf(Inst *inst)
     {
         ASSERT(next_or_inst_ == 0);
-        ASSERT(GetUserInst() == nullptr);
+        ASSERT(GetCorrespondingInputInst() == nullptr);
         auto first_user_ref = inst->GetFirstUserRef(); 
         next_or_inst_ = reinterpret_cast<uintptr_t>(*first_user_ref); 
         *first_user_ref = this; 
+    }
+
+    void FindAndRemoveFromChain(User *user)
+    {
+        ASSERT(!user->IsSpecial());
+        ASSERT(user != nullptr);
+        if (GetNext() == user) {
+            next_or_inst_ = GetNext()->next_or_inst_;
+            return;
+        }
+        GetNext()->FindAndRemoveFromChain(user);
     }
 
 private:
@@ -224,6 +307,8 @@ private:
 private:
     static constexpr uintptr_t MASK = 0xFF00'0000'0000'0000;
     uintptr_t next_or_inst_;
+
+friend Inst;
 };
 
 template <size_t INPUTS_COUNT>
@@ -235,29 +320,32 @@ public:
         users_[INPUTS_COUNT].InitAsPointerToInst(this);
     }
 
-    template <size_t IDX>
+    template <size_t IDX, bool NEED_UPDATE_USER = true>
     void SetInput(Inst *inst)
     {
         static_assert(IDX < INPUTS_COUNT);
-
-        if (inputs_[IDX] != nullptr) {
-            // Firstly, must remove the old user:
-            users_[IDX].ReplaceUserWith(inst);
-        } else {
-            users_[IDX].AppendUseOf(inst);
+        if constexpr (NEED_UPDATE_USER) {
+            if (inputs_[IDX] != nullptr) {
+                // Firstly, must remove the old user:
+                users_[IDX].ReplaceUserWith(inst);
+            } else {
+                users_[IDX].AppendUseOf(inst);
+            }
         }
         inputs_[IDX] = inst;
     }
-
+    template <bool NEED_UPDATE_USER = true>
     void SetInput(size_t idx, Inst *inst)
     {
         ASSERT(idx < INPUTS_COUNT);
 
-        if (inputs_[idx] != nullptr) {
-            // Firstly, must remove the old user:
-            users_[idx].ReplaceUserWith(inst);
-        } else {
-            users_[idx].AppendUseOf(inst);
+        if constexpr (NEED_UPDATE_USER) {
+            if (inputs_[idx] != nullptr) {
+                // Firstly, must remove the old user:
+                users_[idx].ReplaceUserWith(inst);
+            } else {
+                users_[idx].AppendUseOf(inst);
+            }
         }
         inputs_[idx] = inst;
     }
@@ -265,6 +353,10 @@ public:
     Inst *GetInput(size_t idx)
     {
         return inputs_[idx];
+    }
+    User *GetUserPointee(size_t idx)
+    {
+        return &users_[idx];
     }
     
     auto GetInputs()
@@ -295,7 +387,7 @@ public:
     FixedInputsInst(Args &&... args) : Inst(std::forward<Args>(args)...) {}
 
     template <size_t IDX>
-    void SetInput(Inst *inst)
+    void SetInput([[maybe_unused]] Inst *inst)
     {
         UNREACHABLE();
     }
@@ -305,12 +397,17 @@ public:
         return Span<Inst *>();
     }
 
+    template <bool NEED_UPDATE_USER = true>
     void SetInput(size_t idx, Inst *inst)
     {
         UNREACHABLE();
     }
 
     Inst *GetInput(size_t idx)
+    {
+        UNREACHABLE();
+    }
+    User *GetUserPointee(size_t idx)
     {
         UNREACHABLE();
     }
@@ -331,29 +428,32 @@ public:
         users_[inputs_count].InitAsPointerToInst(this);
     }
 
-    template <size_t IDX>
+    template <size_t IDX, bool NEED_UPDATE_USER = true>
     void SetInput(Inst *inst)
     {
         ASSERT(IDX < inputs_.size());
-
-        if (inputs_[IDX] != nullptr) {
-            // Firstly, must remove the old user:
-            users_[IDX].ReplaceUserWith(inst);
-        } else {
-            users_[IDX].AppendUseOf(inst);
+        if constexpr (NEED_UPDATE_USER) {
+            if (inputs_[IDX] != nullptr) {
+                // Firstly, must remove the old user:
+                users_[IDX].ReplaceUserWith(inst);
+            } else {
+                users_[IDX].AppendUseOf(inst);
+            }
         }
         inputs_[IDX] = inst;
     }
 
+    template <bool NEED_UPDATE_USER = true>
     void SetInput(size_t idx, Inst *inst)
     {
         ASSERT(idx < inputs_.size());
-
-        if (inputs_[idx] != nullptr) {
-            // Firstly, must remove the old user:
-            users_[idx].ReplaceUserWith(inst);
-        } else {
-            users_[idx].AppendUseOf(inst);
+        if constexpr (NEED_UPDATE_USER) {
+            if (inputs_[idx] != nullptr) {
+                // Firstly, must remove the old user:
+                users_[idx].ReplaceUserWith(inst);
+            } else {
+                users_[idx].AppendUseOf(inst);
+            }
         }
         inputs_[idx] = inst;
     }
@@ -363,7 +463,10 @@ public:
         ASSERT(idx < inputs_.size());
         return inputs_[idx];
     }
-
+    User *GetUserPointee(size_t idx)
+    {
+        return &users_[idx];
+    }
     size_t GetInputsCount() const
     {
         ASSERT(inputs_.size() == (users_.size() - 1));

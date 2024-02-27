@@ -39,7 +39,7 @@ public:
     //bool operator!=(const IteratorBase &other)
     bool operator!=(std::nullptr_t end)
     {
-        return val_ != nullptr;
+        return val_ != end;
     }
     auto end()
     {

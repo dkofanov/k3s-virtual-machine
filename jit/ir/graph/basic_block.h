@@ -72,7 +72,8 @@ public:
             return;
         }
         ASSERT(last_phi_ != nullptr);
-        last_phi_->SetNextPrev(inst);
+        last_phi_->SetNext(inst);
+        inst->SetPrev(last_inst_);
         last_phi_ = inst;
         ASSERT(last_phi_->Next() == nullptr);
         inst->SetBB(this);
@@ -87,7 +88,8 @@ public:
             return;
         }
         ASSERT(last_inst_ != nullptr);
-        last_inst_->SetNextPrev(inst);
+        last_inst_->SetNext(inst);
+        inst->SetPrev(last_inst_);
         last_inst_ = inst;
         inst->SetBB(this);
     }
@@ -130,7 +132,17 @@ public:
     auto FirstPhi() const { return first_phi_; }
     auto LastPhi() const { return last_phi_; }
     auto FirstInst() const { return first_inst_; }
+    void SetFirstInst(Inst *inst)
+    {
+        ASSERT(!inst->IsPhi());
+        first_inst_ = inst;
+    }
     auto LastInst() const { return last_inst_; }
+    void SetLastInst(Inst *inst)
+    {
+        ASSERT(!inst->IsPhi());
+        last_inst_ = inst;
+    }
 
     using PredsT = Vector<BasicBlock *>;
     using SuccsT = Vector<BasicBlock *>;

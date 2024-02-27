@@ -7,7 +7,13 @@ public:
 % end
     };
 
-
+    void ReplaceWith(Inst *inst)
+    {
+        ClearInputs();
+        ReplaceInBB(inst);
+        ReplaceUsersTo(inst);
+    }
+    
     bool HasDst()
     {
         switch (opcode_) {
@@ -29,8 +35,12 @@ public:
 % end
 
     Inst(Opcode opcode);
+    
+    template <bool NEED_UPDATE_USER = true>
+    void SetInput(size_t i, Inst *inst);
 
     Inst *GetInput(size_t i);
+    User *GetUserPointee(size_t i);
     Span<Inst *> GetInputs();
     size_t GetInputsCount();
 
@@ -41,13 +51,20 @@ public:
     {
         return opcode_;
     }
-
-    void SetNextPrev(Inst *next)
+    bool Equal(Inst *inst) const
     {
-        ASSERT(next_ == nullptr);
+        // TODO: implement via GVN
+        return this == inst;
+    }
+
+    void Prepend(Inst *inst);
+    void SetNext(Inst *next)
+    {
         next_ = next;
-        ASSERT(next->prev_ == nullptr);
-        next->prev_ = this;
+    }
+    void SetPrev(Inst *prev)
+    {
+        prev_ = prev;
     }
     Inst *Next()
     {
@@ -87,6 +104,11 @@ public:
     }
 
 private:
+    void RemoveUser(User *user);
+    void ClearInputs();
+    void ReplaceInBB(Inst *inst);
+    void ReplaceUsersTo(Inst *inst);
+
     auto GetFirstUserRef()
     {
         return &first_user_;

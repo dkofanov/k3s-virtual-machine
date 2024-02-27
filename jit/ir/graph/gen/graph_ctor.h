@@ -2,7 +2,6 @@
 #include "../graph.h"
 #include "../../../common.h"
 #include "../analyses/loop.h"
-#include <cstddef>
 #include <string_view>
 #include <initializer_list>
 
@@ -108,13 +107,11 @@ public:
                 }
             } else {
                 ASSERT(succs.bb_ids_.size() == 2);
-                
                 auto b_true = GRAPH->GetBlockById(succs.bb_ids_[0]);
                 auto b_false = GRAPH->GetBlockById(succs.bb_ids_[1]);
                 for (auto id : bb_ids_) {
                     GRAPH->GetBlockById(id)->SetTrueFalseSuccs(b_true, b_false);
                 }
-    
                 // Nasty hack for hw5::g_loopSideExit, need to be fixed.
                 if (!missing_phi_inputs_.empty()) {
                     size_t input_idx = b_true->Preds().size() - 1;
@@ -214,157 +211,8 @@ __VA_ARGS__;                                \
             AppendInst();                                                                                   \
         }                                                                                                   \
         operator ConstInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
         ConstInst *inst_ {};                                                                   \
-    }
-
-
-#define ADD(...) ADD_INTERNAL(__LINE__, __VA_ARGS__)
-
-#define ADD_INTERNAL(LINE, ...) ADD_INTERNAL_PASTE(LINE, __VA_ARGS__)   
-
-#define ADD_INTERNAL_PASTE(LINE, ...) \
-    struct AddInst_##LINE##_ctor                                                             \
-    {                                                                                                       \
-        void AppendInst()                                                                                   \
-        {                                                                                                   \
-            auto inst = this->inst_;                                                                        \
-            GRAPH->GetBlockById()->PushBack(inst);                                                          \
-        }                                                                                                   \
-        AddInst_##LINE##_ctor (const AddInst_##LINE##_ctor &) = delete;       \
-        AddInst_##LINE##_ctor (AddInst_##LINE##_ctor &&) = delete;            \
-        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
-        AddInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
-        {                                                                                                   \
-            size_t i = 0;                                                                                   \
-            inst_ = new AddInst (__VA_ARGS__);                                               \
-            for (auto input : l) {                                                                          \
-                inst_->SetInput(i, input);                                                                  \
-                i++;                                                                                        \
-            }                                                                                               \
-            AppendInst();                                                                                   \
-        }                                                                                                   \
-        operator AddInst*() { return inst_; }                                                \
-        AddInst *inst_ {};                                                                   \
-    }
-
-
-#define SUB(...) SUB_INTERNAL(__LINE__, __VA_ARGS__)
-
-#define SUB_INTERNAL(LINE, ...) SUB_INTERNAL_PASTE(LINE, __VA_ARGS__)   
-
-#define SUB_INTERNAL_PASTE(LINE, ...) \
-    struct SubInst_##LINE##_ctor                                                             \
-    {                                                                                                       \
-        void AppendInst()                                                                                   \
-        {                                                                                                   \
-            auto inst = this->inst_;                                                                        \
-            GRAPH->GetBlockById()->PushBack(inst);                                                          \
-        }                                                                                                   \
-        SubInst_##LINE##_ctor (const SubInst_##LINE##_ctor &) = delete;       \
-        SubInst_##LINE##_ctor (SubInst_##LINE##_ctor &&) = delete;            \
-        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
-        SubInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
-        {                                                                                                   \
-            size_t i = 0;                                                                                   \
-            inst_ = new SubInst (__VA_ARGS__);                                               \
-            for (auto input : l) {                                                                          \
-                inst_->SetInput(i, input);                                                                  \
-                i++;                                                                                        \
-            }                                                                                               \
-            AppendInst();                                                                                   \
-        }                                                                                                   \
-        operator SubInst*() { return inst_; }                                                \
-        SubInst *inst_ {};                                                                   \
-    }
-
-
-#define MUL(...) MUL_INTERNAL(__LINE__, __VA_ARGS__)
-
-#define MUL_INTERNAL(LINE, ...) MUL_INTERNAL_PASTE(LINE, __VA_ARGS__)   
-
-#define MUL_INTERNAL_PASTE(LINE, ...) \
-    struct MulInst_##LINE##_ctor                                                             \
-    {                                                                                                       \
-        void AppendInst()                                                                                   \
-        {                                                                                                   \
-            auto inst = this->inst_;                                                                        \
-            GRAPH->GetBlockById()->PushBack(inst);                                                          \
-        }                                                                                                   \
-        MulInst_##LINE##_ctor (const MulInst_##LINE##_ctor &) = delete;       \
-        MulInst_##LINE##_ctor (MulInst_##LINE##_ctor &&) = delete;            \
-        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
-        MulInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
-        {                                                                                                   \
-            size_t i = 0;                                                                                   \
-            inst_ = new MulInst (__VA_ARGS__);                                               \
-            for (auto input : l) {                                                                          \
-                inst_->SetInput(i, input);                                                                  \
-                i++;                                                                                        \
-            }                                                                                               \
-            AppendInst();                                                                                   \
-        }                                                                                                   \
-        operator MulInst*() { return inst_; }                                                \
-        MulInst *inst_ {};                                                                   \
-    }
-
-
-#define PHI(...) PHI_INTERNAL(__LINE__, __VA_ARGS__)
-
-#define PHI_INTERNAL(LINE, ...) PHI_INTERNAL_PASTE(LINE, __VA_ARGS__)   
-
-#define PHI_INTERNAL_PASTE(LINE, ...) \
-    struct PhiInst_##LINE##_ctor                                                             \
-    {                                                                                                       \
-        void AppendInst()                                                                                   \
-        {                                                                                                   \
-            auto inst = this->inst_;                                                                        \
-            GRAPH->GetBlockById()->PushPhi(inst);                                                           \
-        }                                                                                                   \
-        PhiInst_##LINE##_ctor (const PhiInst_##LINE##_ctor &) = delete;       \
-        PhiInst_##LINE##_ctor (PhiInst_##LINE##_ctor &&) = delete;            \
-        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
-        PhiInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
-        {                                                                                                   \
-            size_t i = 0;                                                                                   \
-            inst_ = new PhiInst (__VA_ARGS__);                                               \
-            for (auto input : l) {                                                                          \
-                inst_->SetInput(i, input);                                                                  \
-                i++;                                                                                        \
-            }                                                                                               \
-            AppendInst();                                                                                   \
-        }                                                                                                   \
-        operator PhiInst*() { return inst_; }                                                \
-        PhiInst *inst_ {};                                                                   \
-    }
-
-
-#define JMP(...) JMP_INTERNAL(__LINE__, __VA_ARGS__)
-
-#define JMP_INTERNAL(LINE, ...) JMP_INTERNAL_PASTE(LINE, __VA_ARGS__)   
-
-#define JMP_INTERNAL_PASTE(LINE, ...) \
-    struct JmpInst_##LINE##_ctor                                                             \
-    {                                                                                                       \
-        void AppendInst()                                                                                   \
-        {                                                                                                   \
-            auto inst = this->inst_;                                                                        \
-            GRAPH->GetBlockById()->PushBack(inst);                                                          \
-        }                                                                                                   \
-        JmpInst_##LINE##_ctor (const JmpInst_##LINE##_ctor &) = delete;       \
-        JmpInst_##LINE##_ctor (JmpInst_##LINE##_ctor &&) = delete;            \
-        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
-        JmpInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
-        {                                                                                                   \
-            size_t i = 0;                                                                                   \
-            inst_ = new JmpInst (__VA_ARGS__);                                               \
-            for (auto input : l) {                                                                          \
-                inst_->SetInput(i, input);                                                                  \
-                i++;                                                                                        \
-            }                                                                                               \
-            AppendInst();                                                                                   \
-        }                                                                                                   \
-        operator JmpInst*() { return inst_; }                                                \
-        JmpInst *inst_ {};                                                                   \
     }
 
 
@@ -399,7 +247,39 @@ __VA_ARGS__;                                \
             AppendInst();                                                                                   \
         }                                                                                                   \
         operator ParameterInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
         ParameterInst *inst_ {};                                                                   \
+    }
+
+
+#define CAST(...) CAST_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define CAST_INTERNAL(LINE, ...) CAST_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define CAST_INTERNAL_PASTE(LINE, ...) \
+    struct CastInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        CastInst_##LINE##_ctor (const CastInst_##LINE##_ctor &) = delete;       \
+        CastInst_##LINE##_ctor (CastInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        CastInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new CastInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator CastInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        CastInst *inst_ {};                                                                   \
     }
 
 
@@ -429,6 +309,7 @@ __VA_ARGS__;                                \
             AppendInst();                                                                                   \
         }                                                                                                   \
         operator ReturnInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
         ReturnInst *inst_ {};                                                                   \
     }
 
@@ -464,7 +345,318 @@ __VA_ARGS__;                                \
             AppendInst();                                                                                   \
         }                                                                                                   \
         operator ReturnVoidInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
         ReturnVoidInst *inst_ {};                                                                   \
+    }
+
+
+#define ADD(...) ADD_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define ADD_INTERNAL(LINE, ...) ADD_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define ADD_INTERNAL_PASTE(LINE, ...) \
+    struct AddInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        AddInst_##LINE##_ctor (const AddInst_##LINE##_ctor &) = delete;       \
+        AddInst_##LINE##_ctor (AddInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        AddInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new AddInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator AddInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        AddInst *inst_ {};                                                                   \
+    }
+
+
+#define SUB(...) SUB_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define SUB_INTERNAL(LINE, ...) SUB_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define SUB_INTERNAL_PASTE(LINE, ...) \
+    struct SubInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        SubInst_##LINE##_ctor (const SubInst_##LINE##_ctor &) = delete;       \
+        SubInst_##LINE##_ctor (SubInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        SubInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new SubInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator SubInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        SubInst *inst_ {};                                                                   \
+    }
+
+
+#define MUL(...) MUL_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define MUL_INTERNAL(LINE, ...) MUL_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define MUL_INTERNAL_PASTE(LINE, ...) \
+    struct MulInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        MulInst_##LINE##_ctor (const MulInst_##LINE##_ctor &) = delete;       \
+        MulInst_##LINE##_ctor (MulInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        MulInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new MulInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator MulInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        MulInst *inst_ {};                                                                   \
+    }
+
+
+#define NEG(...) NEG_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define NEG_INTERNAL(LINE, ...) NEG_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define NEG_INTERNAL_PASTE(LINE, ...) \
+    struct NegInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        NegInst_##LINE##_ctor (const NegInst_##LINE##_ctor &) = delete;       \
+        NegInst_##LINE##_ctor (NegInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        NegInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new NegInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator NegInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        NegInst *inst_ {};                                                                   \
+    }
+
+
+#define NOT(...) NOT_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define NOT_INTERNAL(LINE, ...) NOT_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define NOT_INTERNAL_PASTE(LINE, ...) \
+    struct NotInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        NotInst_##LINE##_ctor (const NotInst_##LINE##_ctor &) = delete;       \
+        NotInst_##LINE##_ctor (NotInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        NotInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new NotInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator NotInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        NotInst *inst_ {};                                                                   \
+    }
+
+
+#define XOR(...) XOR_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define XOR_INTERNAL(LINE, ...) XOR_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define XOR_INTERNAL_PASTE(LINE, ...) \
+    struct XorInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        XorInst_##LINE##_ctor (const XorInst_##LINE##_ctor &) = delete;       \
+        XorInst_##LINE##_ctor (XorInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        XorInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new XorInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator XorInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        XorInst *inst_ {};                                                                   \
+    }
+
+
+#define ASHR(...) ASHR_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define ASHR_INTERNAL(LINE, ...) ASHR_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define ASHR_INTERNAL_PASTE(LINE, ...) \
+    struct AshrInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        AshrInst_##LINE##_ctor (const AshrInst_##LINE##_ctor &) = delete;       \
+        AshrInst_##LINE##_ctor (AshrInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        AshrInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new AshrInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator AshrInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        AshrInst *inst_ {};                                                                   \
+    }
+
+
+#define SHL(...) SHL_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define SHL_INTERNAL(LINE, ...) SHL_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define SHL_INTERNAL_PASTE(LINE, ...) \
+    struct ShlInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        ShlInst_##LINE##_ctor (const ShlInst_##LINE##_ctor &) = delete;       \
+        ShlInst_##LINE##_ctor (ShlInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        ShlInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new ShlInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator ShlInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        ShlInst *inst_ {};                                                                   \
+    }
+
+
+#define PHI(...) PHI_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define PHI_INTERNAL(LINE, ...) PHI_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define PHI_INTERNAL_PASTE(LINE, ...) \
+    struct PhiInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushPhi(inst);                                                           \
+        }                                                                                                   \
+        PhiInst_##LINE##_ctor (const PhiInst_##LINE##_ctor &) = delete;       \
+        PhiInst_##LINE##_ctor (PhiInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        PhiInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new PhiInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator PhiInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        PhiInst *inst_ {};                                                                   \
+    }
+
+
+#define JMP(...) JMP_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define JMP_INTERNAL(LINE, ...) JMP_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define JMP_INTERNAL_PASTE(LINE, ...) \
+    struct JmpInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        JmpInst_##LINE##_ctor (const JmpInst_##LINE##_ctor &) = delete;       \
+        JmpInst_##LINE##_ctor (JmpInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        JmpInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new JmpInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator JmpInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        JmpInst *inst_ {};                                                                   \
     }
 
 

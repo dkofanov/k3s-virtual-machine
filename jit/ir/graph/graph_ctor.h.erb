@@ -219,6 +219,7 @@ __VA_ARGS__;                                \
             AppendInst();                                                                                   \
         }                                                                                                   \
         operator <%= inst_class_name %>*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
         <%= inst_class_name %> *inst_ {};                                                                   \
     }
 

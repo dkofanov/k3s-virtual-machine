@@ -4,8 +4,30 @@ instructions:
   - opcode: Const
     argc: 0
     mixins:
-    - Typed       # unnecessary mixin, for dev+testing purpose 
+    - Typed
     - Immediate
+  
+
+  - opcode: Parameter
+    argc: 0
+    mixins:
+    - Typed
+  
+  - opcode: Cast
+    argc: 1
+    mixins:
+    - Typed
+
+  - opcode: Return
+    argc: 1
+    mixins:
+    - Typed
+    props:
+    - no_dst
+  - opcode: ReturnVoid
+    argc: 0
+    props:
+    - no_dst
 
 # Artithmetics:
   - opcode: Add
@@ -17,6 +39,22 @@ instructions:
   - opcode: Mul
     argc: 2
 
+  - opcode: Neg
+    argc: 1
+
+# Bitwise
+  - opcode: Not
+    argc: 1
+
+  - opcode: Xor
+    argc: 2
+  
+  - opcode: Ashr
+    argc: 2
+  
+  - opcode: Shl
+    argc: 2
+
 # CF-related
   - opcode: Phi
 
@@ -24,21 +62,5 @@ instructions:
     argc: 2
     mixins:
     - Conditional
-    props:
-    - no_dst
-
-  - opcode: Parameter
-    argc: 0
-    mixins:
-    - Typed
-  
-  - opcode: Return
-    argc: 1
-    mixins:
-    - Typed
-    props:
-    - no_dst
-  - opcode: ReturnVoid
-    argc: 0
     props:
     - no_dst

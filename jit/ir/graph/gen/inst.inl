@@ -3,23 +3,35 @@ public:
     enum Opcode {
         NONE,
         CONST,
+        PARAMETER,
+        CAST,
+        RETURN,
+        RETURNVOID,
         ADD,
         SUB,
         MUL,
+        NEG,
+        NOT,
+        XOR,
+        ASHR,
+        SHL,
         PHI,
         JMP,
-        PARAMETER,
-        RETURN,
-        RETURNVOID,
     };
 
-
+    void ReplaceWith(Inst *inst)
+    {
+        ClearInputs();
+        ReplaceInBB(inst);
+        ReplaceUsersTo(inst);
+    }
+    
     bool HasDst()
     {
         switch (opcode_) {
-        case JMP:
         case RETURN:
         case RETURNVOID:
+        case JMP:
             return false;
         default:
             return true;
@@ -29,6 +41,18 @@ public:
     bool IsConst() const { return opcode_ == CONST; }
     auto AsConst() const;
     auto AsConst();
+    bool IsParameter() const { return opcode_ == PARAMETER; }
+    auto AsParameter() const;
+    auto AsParameter();
+    bool IsCast() const { return opcode_ == CAST; }
+    auto AsCast() const;
+    auto AsCast();
+    bool IsReturn() const { return opcode_ == RETURN; }
+    auto AsReturn() const;
+    auto AsReturn();
+    bool IsReturnVoid() const { return opcode_ == RETURNVOID; }
+    auto AsReturnVoid() const;
+    auto AsReturnVoid();
     bool IsAdd() const { return opcode_ == ADD; }
     auto AsAdd() const;
     auto AsAdd();
@@ -38,25 +62,35 @@ public:
     bool IsMul() const { return opcode_ == MUL; }
     auto AsMul() const;
     auto AsMul();
+    bool IsNeg() const { return opcode_ == NEG; }
+    auto AsNeg() const;
+    auto AsNeg();
+    bool IsNot() const { return opcode_ == NOT; }
+    auto AsNot() const;
+    auto AsNot();
+    bool IsXor() const { return opcode_ == XOR; }
+    auto AsXor() const;
+    auto AsXor();
+    bool IsAshr() const { return opcode_ == ASHR; }
+    auto AsAshr() const;
+    auto AsAshr();
+    bool IsShl() const { return opcode_ == SHL; }
+    auto AsShl() const;
+    auto AsShl();
     bool IsPhi() const { return opcode_ == PHI; }
     auto AsPhi() const;
     auto AsPhi();
     bool IsJmp() const { return opcode_ == JMP; }
     auto AsJmp() const;
     auto AsJmp();
-    bool IsParameter() const { return opcode_ == PARAMETER; }
-    auto AsParameter() const;
-    auto AsParameter();
-    bool IsReturn() const { return opcode_ == RETURN; }
-    auto AsReturn() const;
-    auto AsReturn();
-    bool IsReturnVoid() const { return opcode_ == RETURNVOID; }
-    auto AsReturnVoid() const;
-    auto AsReturnVoid();
 
     Inst(Opcode opcode);
+    
+    template <bool NEED_UPDATE_USER = true>
+    void SetInput(size_t i, Inst *inst);
 
     Inst *GetInput(size_t i);
+    User *GetUserPointee(size_t i);
     Span<Inst *> GetInputs();
     size_t GetInputsCount();
 
@@ -67,13 +101,20 @@ public:
     {
         return opcode_;
     }
-
-    void SetNextPrev(Inst *next)
+    bool Equal(Inst *inst) const
     {
-        ASSERT(next_ == nullptr);
+        // TODO: implement via GVN
+        return this == inst;
+    }
+
+    void Prepend(Inst *inst);
+    void SetNext(Inst *next)
+    {
         next_ = next;
-        ASSERT(next->prev_ == nullptr);
-        next->prev_ = this;
+    }
+    void SetPrev(Inst *prev)
+    {
+        prev_ = prev;
     }
     Inst *Next()
     {
@@ -113,6 +154,11 @@ public:
     }
 
 private:
+    void RemoveUser(User *user);
+    void ClearInputs();
+    void ReplaceInBB(Inst *inst);
+    void ReplaceUsersTo(Inst *inst);
+
     auto GetFirstUserRef()
     {
         return &first_user_;
@@ -132,7 +178,7 @@ private:
     static constexpr uint8_t INPUTS_COUNT_ARRAY[] =
     {
         (uint8_t) -1,
- (uint8_t) 0,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) -1,  (uint8_t) 2,  (uint8_t) 0,  (uint8_t) 1,  (uint8_t) 0,     
+ (uint8_t) 0,  (uint8_t) 0,  (uint8_t) 1,  (uint8_t) 1,  (uint8_t) 0,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 1,  (uint8_t) 1,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) -1,  (uint8_t) 2,     
     };
 
 private:

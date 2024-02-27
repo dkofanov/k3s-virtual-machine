@@ -4,6 +4,8 @@
 #include "basic_block.h"
 #include "analyses/live_intervals.h"
 #include <iterator>
+#include <type_traits>
+#include <utility>
 
 namespace compiler {
 
@@ -33,6 +35,13 @@ public:
     {
         blocks_.emplace_back();
         return blocks_.size() - 1;
+    }
+
+    template <typename T, typename... Args>
+    T *New(Args&&... args)
+    {
+        static_assert(std::is_base_of_v<Inst, T>);
+        return new T(std::forward<Args>(args)...);
     }
 
     auto IncInstId()
@@ -142,6 +151,7 @@ public:
 
     void AllocateRegisters();
 
+    void ApplyPeepholes();
     void DumpRPO() const;
     void DumpLiveness() const;
     void DumpRegalloc() const;

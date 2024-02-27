@@ -3,12 +3,9 @@
 class <%= inst.opcode %>Inst : <%= inst.inheritance_list %>
 {
 public:
-    template <<%= ArgList("typename Arg", inst.mixins.length) + "#{inst.mixins.length == 0 ? "" : ","}" %> typename unused = void>
-    <%= inst.opcode %>Inst(<%= inst.append_argc %> <%= TypedArgList("Arg", "&&arg", inst.mixins.length) %>)
-    : <%= inst.base_class_name %>(<%= inst.append_argc(false) %><%= inst.opcode.upcase %>)
-% inst.mixins.each_with_index do |mixin, idx|
-    , <%= mixin %>Mixin(arg<%= idx %>)
-% end 
+    <%= TemplateArgList(inst) %>
+    <%= inst.opcode %>Inst(<%= CtorArgList(inst) %>)
+    : <%= BaseClassInitialization(inst) %>
     {}
 
     template <bool DUMP_LIVENESS = false>
@@ -18,7 +15,7 @@ public:
         state.copyfmt(std::cout);
         
         std::cout <<  "        " << std::setw(20) << std::left <<  "<%= inst.opcode.upcase %>" << std::setw(0) << "(" ;
-        <%= AppendSuffix(inst.mixins, "Mixin::Dump()", "<< \", \"; ") + ";" %> 
+        <%= AppendSuffix(inst.mixins, "::Dump()", "<< \", \"; ") + ";" %> 
         std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
         DumpDF();
         std::cout.copyfmt(state);
@@ -50,6 +47,22 @@ inline void Inst::Dump()
     }
 }
 
+template <bool NEED_UPDATE_USER>
+inline void Inst::SetInput(size_t i, Inst *inst)
+{
+    switch (opcode_) {
+% IR.instructions.each do |inst|
+    case <%= inst.opcode.upcase %>:
+    {
+        As<%= inst.opcode %>()->SetInput<NEED_UPDATE_USER>(i, inst);
+        return;
+    }
+% end
+    default:
+        UNREACHABLE();
+    }
+}
+
 inline Inst *Inst::GetInput(size_t i)
 {
     switch (opcode_) {
@@ -60,7 +73,16 @@ inline Inst *Inst::GetInput(size_t i)
         UNREACHABLE();
     }
 }
-
+inline User *Inst::GetUserPointee(size_t i)
+{
+    switch (opcode_) {
+% IR.instructions.each do |inst|
+    case <%= inst.opcode.upcase %>: return As<%= inst.opcode %>()->GetUserPointee(i);
+% end
+    default:
+        UNREACHABLE();
+    }
+}
 inline Span<Inst *> Inst::GetInputs()
 {
     switch (opcode_) {
