@@ -1,9 +1,11 @@
 #pragma once
+
 #include <vector>
 #include <list>
 #include <set>
 #include <span>
 #include <unordered_map>
+#include <map>
 #include <cassert>
 #include <cstddef>
 
@@ -21,6 +23,9 @@ using Span = std::span<T>;
 
 template<typename K, typename T>
 using UnorderedMap = std::unordered_map<K, T>;
+
+template<typename K, typename T>
+using Map = std::map<K, T>;
 
 #define ASSERT(...) assert(__VA_ARGS__)
 #define UNREACHABLE()  abort();

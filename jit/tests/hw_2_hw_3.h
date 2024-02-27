@@ -1,4 +1,5 @@
 #include "../ir/graph/gen/graph_ctor.h"
+#include <cstddef>
 
 using namespace compiler;
 
@@ -57,14 +58,15 @@ namespace hw2_hw3_doms_and_loops {
 
         g1->BuildLinearOrder();
         auto lo = g1->GetLinearOrder();
-        ASSERT(lo.size() == 7U);
-        ASSERT(lo[0] == g1.A);
-        ASSERT(lo[1] == g1.B);
-        ASSERT(lo[2] == g1.C);
-        ASSERT(lo[3] == g1.F);
-        ASSERT(lo[4] == g1.E);
-        ASSERT(lo[5] == g1.G);
-        ASSERT(lo[6] == g1.D);
+        ASSERT(lo.size() == 8U);
+        ASSERT(lo[0].block == g1.A);
+        ASSERT(lo[1].block == g1.B);
+        ASSERT(lo[2].block == g1.C);
+        ASSERT(lo[3].block == g1.F);
+        ASSERT(lo[4].block == g1.E);
+        ASSERT(lo[5].block == g1.G);
+        ASSERT(lo[6].block == g1.D);
+        ASSERT(lo[7].block == nullptr);
         g1.BG();
     }
 
@@ -158,18 +160,19 @@ namespace hw2_hw3_doms_and_loops {
 
         g2->BuildLinearOrder();
         auto lo = g2->GetLinearOrder();
-        ASSERT(lo.size() == 11U);
-        ASSERT(lo[0] == g2.A);
-        ASSERT(lo[1] == g2.B);
-        ASSERT(lo[2] == g2.J);
-        ASSERT(lo[3] == g2.C);
-        ASSERT(lo[4] == g2.D);
-        ASSERT(lo[5] == g2.E);
-        ASSERT(lo[6] == g2.F);
-        ASSERT(lo[7] == g2.G);
-        ASSERT(lo[8] == g2.H);
-        ASSERT(lo[9] == g2.I);
-        ASSERT(lo[10] == g2.K);
+        ASSERT(lo.size() == 12U);
+        ASSERT(lo[0].block == g2.A);
+        ASSERT(lo[1].block == g2.B);
+        ASSERT(lo[2].block == g2.J);
+        ASSERT(lo[3].block == g2.C);
+        ASSERT(lo[4].block == g2.D);
+        ASSERT(lo[5].block == g2.E);
+        ASSERT(lo[6].block == g2.F);
+        ASSERT(lo[7].block == g2.G);
+        ASSERT(lo[8].block == g2.H);
+        ASSERT(lo[9].block == g2.I);
+        ASSERT(lo[10].block == g2.K);
+        ASSERT(lo[11].block == nullptr);
         g2.BG();
     }
     GRAPH(g3,
@@ -260,16 +263,17 @@ namespace hw2_hw3_doms_and_loops {
         
         g3->BuildLinearOrder();
         auto lo = g3->GetLinearOrder();
-        ASSERT(lo.size() == 9U);
-        ASSERT(lo[0] == g3.A);
-        ASSERT(lo[1] == g3.B);
-        ASSERT(lo[2] == g3.E);
-        ASSERT(lo[3] == g3.F);
-        ASSERT(lo[4] == g3.H);
-        ASSERT(lo[5] == g3.G);
-        ASSERT(lo[6] == g3.C);
-        ASSERT(lo[7] == g3.D);
-        ASSERT(lo[8] == g3.I);
+        ASSERT(lo.size() == 10U);
+        ASSERT(lo[0].block == g3.A);
+        ASSERT(lo[1].block == g3.B);
+        ASSERT(lo[2].block == g3.E);
+        ASSERT(lo[3].block == g3.F);
+        ASSERT(lo[4].block == g3.H);
+        ASSERT(lo[5].block == g3.G);
+        ASSERT(lo[6].block == g3.C);
+        ASSERT(lo[7].block == g3.D);
+        ASSERT(lo[8].block == g3.I);
+        ASSERT(lo[9].block == nullptr);
 
         g3.BG();
     }

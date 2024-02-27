@@ -276,6 +276,40 @@ inline auto Inst::AsReturn() const
 {
     return static_cast<const ReturnInst *>(this);
 }
+class ReturnVoidInst : public FixedInputsInst<0>
+{
+public:
+    template < typename unused = void>
+    ReturnVoidInst( )
+    : FixedInputsInst<0>(RETURNVOID)
+    {}
+
+    template <bool DUMP_LIVENESS = false>
+    auto &Dump() 
+    {
+        std::ios state(nullptr);
+        state.copyfmt(std::cout);
+        
+        std::cout <<  "        " << std::setw(20) << std::left <<  "RETURNVOID" << std::setw(0) << "(" ;
+        ; 
+        std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
+        DumpDF();
+        std::cout.copyfmt(state);
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
+    } 
+};
+
+inline auto Inst::AsReturnVoid()
+{
+    return static_cast<ReturnVoidInst *>(this);
+}
+
+inline auto Inst::AsReturnVoid() const
+{
+    return static_cast<const ReturnVoidInst *>(this);
+}
 
 template <bool DUMP_LIVENESS>
 inline void Inst::Dump()
@@ -289,6 +323,7 @@ inline void Inst::Dump()
     case JMP: AsJmp()->Dump<DUMP_LIVENESS>(); break;
     case PARAMETER: AsParameter()->Dump<DUMP_LIVENESS>(); break;
     case RETURN: AsReturn()->Dump<DUMP_LIVENESS>(); break;
+    case RETURNVOID: AsReturnVoid()->Dump<DUMP_LIVENESS>(); break;
     default: UNREACHABLE();
     }
 }
@@ -304,6 +339,7 @@ inline Inst *Inst::GetInput(size_t i)
     case JMP: return AsJmp()->GetInput(i);
     case PARAMETER: return AsParameter()->GetInput(i);
     case RETURN: return AsReturn()->GetInput(i);
+    case RETURNVOID: return AsReturnVoid()->GetInput(i);
     default:
         UNREACHABLE();
     }
@@ -320,6 +356,7 @@ inline Span<Inst *> Inst::GetInputs()
     case JMP: return AsJmp()->GetInputs();
     case PARAMETER: return AsParameter()->GetInputs();
     case RETURN: return AsReturn()->GetInputs();
+    case RETURNVOID: return AsReturnVoid()->GetInputs();
     default:
         UNREACHABLE();
     }

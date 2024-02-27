@@ -100,6 +100,7 @@ public:
         auto &operator>(const PredSuccDeclarator &succs) const
         {
             if (succs.bb_ids_.size() == 1) {
+                ASSERT(missing_phi_inputs_.empty());
                 auto b_succ = GRAPH->GetBlockById(succs.bb_ids_[0]);
                 for (auto id : bb_ids_) {
                     GRAPH->GetBlockById(id)->SetSucc(b_succ);
@@ -110,6 +111,19 @@ public:
                 auto b_false = GRAPH->GetBlockById(succs.bb_ids_[1]);
                 for (auto id : bb_ids_) {
                     GRAPH->GetBlockById(id)->SetTrueFalseSuccs(b_true, b_false);
+                }
+                // Nasty hack for hw5::g_loopSideExit, need to be fixed.
+                if (!missing_phi_inputs_.empty()) {
+                    size_t input_idx = b_true->Preds().size() - 1;
+                    Inst *inst = b_true->FirstPhi();
+                    ASSERT(inst != nullptr);
+                    for (size_t i = 0; i < missing_phi_inputs_.size(); i++) {
+                        ASSERT(inst->IsPhi());
+                        auto phi = inst->AsPhi();
+                        ASSERT(phi->GetInput(input_idx) == nullptr);
+                        phi->SetInput(input_idx, missing_phi_inputs_[i]);
+                        inst = inst->Next();
+                    }
                 }
             }
             return succs;

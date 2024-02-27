@@ -4,6 +4,7 @@
 #include "linear_order.h"
 #include "live_intervals.h"
 #include "../graph.h"
+#include <cstdint>
 
 namespace compiler {
 
@@ -11,18 +12,11 @@ namespace compiler {
  * Based on C.Wimmer's "Linear scan register allocation on SSA form".
  */
 class LivenessAnalysis {
-public:
     class LiveRanges {
     public:
-        void Append(const BasicBlock *bb)
+        void Append(uint32_t b, uint32_t e)
         {
-            ranges_.emplace_back(bb);
-        }
-        void Append(const BasicBlock *bb, size_t end)
-        {
-            auto begin = LiveRange::GetBlockStart(bb);
-            ASSERT(ranges_.empty() || !ranges_.back().IntersectsWith(begin, end));
-            ranges_.emplace_back(LiveRange::GetBlockStart(bb), end);
+            ranges_.emplace_back(b, e);
         }
         void AppendLoopRange(uint32_t b, uint32_t e)
         {
@@ -88,7 +82,7 @@ public:
         // Fix-up for loops:
         Vector<LiveRange> loop_ranges_{};
     };
-
+public:
     auto *GetLiveSet(const BasicBlock *bb)
     {
         return &blocks_live_set_[bb->Id()];
@@ -99,9 +93,9 @@ public:
         return &insts_live_ranges_[inst];
     }
 
-    void AddRange(const Inst *inst, BasicBlock *block)
+    void AddRange(const Inst *inst, uint32_t b, uint32_t e)
     {
-        GetLiveRanges(inst)->Append(block);
+        GetLiveRanges(inst)->Append(b, e);
     }
 
     class LiveSet {
@@ -145,24 +139,24 @@ public:
     void CalculateLifeRanges()
     {
         const auto &lo = graph_->GetLinearOrder();
-        for (auto it = lo.rbegin(); it != lo.rend(); it++) {
-            InitializeBlock(*it);
+        for (auto it = lo.rbegin() + 1; it != lo.rend(); it++) {
+            InitializeBlock(it->block, it->ln, (it - 1)->ln);
             ProcessInstructions(*it);
-            if ((*it)->IsHeader()) {
+            if (it->block->IsHeader()) {
                 ProcessLoop(it);
             }
         }
     }
 
-    void InitializeBlock(BasicBlock *block)
+    void InitializeBlock(BasicBlock *block, uint32_t ln_begin, uint32_t ln_end)
     {
         auto *ls = GetLiveSet(block);
         ASSERT(ls->LiveInsts().empty());
         for (auto succ : block->Succs()) {
             for (const auto *inst : GetLiveSet(succ)->LiveInsts()) {
-                if (inst != nullptr && !GetLiveSet(block)->Has(inst)) {
+                if (inst != nullptr && !ls->Has(inst)) {
                     ls->Extend(inst);
-                    AddRange(inst, block);
+                    AddRange(inst, ln_begin, ln_end);
                 }
             }
             size_t pred_id = succ->GetPredIdx(block);
@@ -170,24 +164,32 @@ public:
                 auto *inst = phi->GetInput(pred_id);
                 if (!GetLiveSet(block)->Has(inst)) {
                     ls->Extend(inst);
-                    AddRange(inst, block);
+                    AddRange(inst, ln_begin, ln_end);
                 }
             }
         }
     }
     
-    void ProcessInstructions(const BasicBlock *block)
+    void ProcessInstructions(const Graph::LinearOrderElement &lo_elem)
     {
+        auto block = lo_elem.block;
+        auto block_start_ln = lo_elem.ln;
         for (auto *inst : block->GetInsts<true>()) {
-            if (inst->HasUsers()) {
-                GetLiveRanges(inst)->FinalizeDef(inst->LN());
-                GetLiveSet(block)->Remove(inst);
+            if (inst->HasDst()) {
+                if (inst->HasUsers()) {
+                    GetLiveRanges(inst)->FinalizeDef(inst->LN());
+                    GetLiveSet(block)->Remove(inst);
+                } else {
+                    GetLiveRanges(inst)->Append(inst->LN(), inst->LN() + 2);
+                    ASSERT(!GetLiveSet(block)->Has(inst));
+                }
             } else {
                 ASSERT(!GetLiveSet(block)->Has(inst));
             }
+            ASSERT(!inst->IsPhi());
             for (auto *input : inst->GetInputs()) {
                 if (!GetLiveSet(block)->Has(input)) {
-                    GetLiveRanges(input)->Append(block, inst->LN());
+                    GetLiveRanges(input)->Append(block_start_ln, inst->LN());
                     GetLiveSet(block)->Extend(input);
                 }
             }
@@ -197,20 +199,19 @@ public:
         }
     }
 
-    void ProcessLoop(Vector<BasicBlock *>::const_reverse_iterator rev_it)
+    void ProcessLoop(Vector<Graph::LinearOrderElement>::const_reverse_iterator rev_it)
     {
-        auto header = *rev_it;
+        auto header = rev_it->block;
+        size_t begin = rev_it->ln;
         auto loop = header->Loop();
 
-        while ((*std::prev(rev_it))->Loop() == loop) {
+        while (std::prev(rev_it)->block->Loop() == loop) {
             --rev_it;
         }
-        auto end = *rev_it; 
-        size_t b = LiveRange::GetBlockStart(header);
-        size_t e = LiveRange::GetBlockEnd(end);
+        size_t end = (--rev_it)->ln;
         for (auto *alive_at_header : GetLiveSet(header)->LiveInsts()) {
             if (alive_at_header != nullptr) {
-                GetLiveRanges(alive_at_header)->AppendLoopRange(b, e);
+                GetLiveRanges(alive_at_header)->AppendLoopRange(begin, end);
             }
         }
     }
@@ -222,6 +223,7 @@ public:
             auto range_it = ranges.Ranges();
             ASSERT(!insts_live_intervals_.contains(inst));
             insts_live_intervals_.emplace(inst, *range_it);
+
             ++range_it;
         
             auto loop_range_it = ranges.LoopRanges();
@@ -290,10 +292,28 @@ public:
                 break;
             }
             ASSERT(insts_live_intervals_.at(inst).CheckIntervals());
+            FillIntervalUsepoints(inst);
         }
     }
 
-    auto &&InstsLiveIntervals()
+    void FillIntervalUsepoints(const Inst *inst)
+    {
+        Set<uint32_t> use_points;
+        
+        auto *user = inst->FirstUser(); 
+        while (user != nullptr) {
+            use_points.insert(user->GetInst()->LN());
+            user = user->GetNext();
+        }
+        List<uint32_t> use_points_list;
+        for (auto i : use_points) {
+            use_points_list.emplace_back(i);
+        }
+        auto &interval = insts_live_intervals_.at(inst);
+        interval.SetUsepoints(std::move(use_points_list));
+    }
+
+    auto &&InstsLiveIntervals() &&
     {
         return std::move(insts_live_intervals_);
     }
@@ -304,7 +324,7 @@ private:
     UnorderedMap<const Inst *, LiveRanges> insts_live_ranges_{};
 
     // Output:
-    UnorderedMap<const Inst *, LiveIntervals> insts_live_intervals_{};
+    UnorderedMap<const Inst *, LiveInterval> insts_live_intervals_{};
 };
 
 }

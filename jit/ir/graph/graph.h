@@ -3,12 +3,22 @@
 #include "marker.h"
 #include "basic_block.h"
 #include "analyses/live_intervals.h"
+#include <iterator>
 
 namespace compiler {
 
 class Graph;
 
 extern Graph *GRAPH;
+struct Location {
+    enum Type {
+        UNDEF,
+        REG,
+        SLOT,
+    };
+    Type type_{};
+    size_t idx_{};
+};
 
 class Graph {
 public:
@@ -108,13 +118,42 @@ public:
     }
 
     void BuildLiveness();
+    auto &InstsLiveIntervals()
+    {
+        return insts_live_intervals_;
+    }
+    
+    size_t GetBlockLinearIDX(BasicBlock *bb)
+    {
+        auto it = std::find_if(linear_order_.begin(), linear_order_.end(), [bb](LinearOrderElement &e){
+            return e.block == bb;
+        });
+        ASSERT(it != linear_order_.end());
+        return std::distance(linear_order_.begin(), it);
+    }
+    uint32_t GetBlockStartLN(size_t block_linear_idx)
+    {
+        return linear_order_[block_linear_idx].ln;
+    }
+    uint32_t GetBlockEndLN(size_t block_linear_idx)
+    {
+        return linear_order_[block_linear_idx + 1].ln;
+    }
+
+    void AllocateRegisters();
 
     void DumpRPO() const;
     void DumpLiveness() const;
+    void DumpRegalloc() const;
     void Dump() const;
 
     auto NewMarker() { return marker_.NewMarker(); }
 
+    struct LinearOrderElement {
+        LinearOrderElement(BasicBlock *b, size_t b_ln) : block(b), ln(b_ln) {}
+        BasicBlock *block{};
+        size_t ln{};
+    };
 private:
     size_t inst_id_{};
     Marker marker_;
@@ -128,9 +167,12 @@ private:
     Loop *root_loop_{};
     bool reducible_{true};
     
-    Vector<BasicBlock *> linear_order_{};
+    Vector<LinearOrderElement> linear_order_{};
     size_t max_life_number_{};
-    UnorderedMap<const Inst *, LiveIntervals> insts_live_intervals_{};
+    UnorderedMap<const Inst *, LiveInterval> insts_live_intervals_{};
+
+    size_t slots_used_{};
+    Map<const LiveRange *, Location> locations_{};
 };
 
 

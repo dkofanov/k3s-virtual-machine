@@ -2,6 +2,7 @@
 #include "../graph.h"
 #include "../../../common.h"
 #include "../analyses/loop.h"
+#include <cstddef>
 #include <string_view>
 #include <initializer_list>
 
@@ -100,16 +101,32 @@ public:
         auto &operator>(const PredSuccDeclarator &succs) const
         {
             if (succs.bb_ids_.size() == 1) {
+                ASSERT(missing_phi_inputs_.empty());
                 auto b_succ = GRAPH->GetBlockById(succs.bb_ids_[0]);
                 for (auto id : bb_ids_) {
                     GRAPH->GetBlockById(id)->SetSucc(b_succ);
                 }
             } else {
                 ASSERT(succs.bb_ids_.size() == 2);
+                
                 auto b_true = GRAPH->GetBlockById(succs.bb_ids_[0]);
                 auto b_false = GRAPH->GetBlockById(succs.bb_ids_[1]);
                 for (auto id : bb_ids_) {
                     GRAPH->GetBlockById(id)->SetTrueFalseSuccs(b_true, b_false);
+                }
+    
+                // Nasty hack for hw5::g_loopSideExit, need to be fixed.
+                if (!missing_phi_inputs_.empty()) {
+                    size_t input_idx = b_true->Preds().size() - 1;
+                    Inst *inst = b_true->FirstPhi();
+                    ASSERT(inst != nullptr);
+                    for (size_t i = 0; i < missing_phi_inputs_.size(); i++) {
+                        ASSERT(inst->IsPhi());
+                        auto phi = inst->AsPhi();
+                        ASSERT(phi->GetInput(input_idx) == nullptr);
+                        phi->SetInput(input_idx, missing_phi_inputs_[i]);
+                        inst = inst->Next();
+                    }
                 }
             }
             return succs;
@@ -413,6 +430,41 @@ __VA_ARGS__;                                \
         }                                                                                                   \
         operator ReturnInst*() { return inst_; }                                                \
         ReturnInst *inst_ {};                                                                   \
+    }
+
+
+#define RETURNVOID(...) RETURNVOID_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define RETURNVOID_INTERNAL(LINE, ...) RETURNVOID_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define RETURNVOID_INTERNAL_PASTE(LINE, ...) \
+    struct ReturnVoidInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        ReturnVoidInst_##LINE##_ctor (const ReturnVoidInst_##LINE##_ctor &) = delete;       \
+        ReturnVoidInst_##LINE##_ctor (ReturnVoidInst_##LINE##_ctor &&) = delete;            \
+        ReturnVoidInst_##LINE##_ctor ()                                                             \
+        {                                                                                                   \
+            inst_ = new ReturnVoidInst (__VA_ARGS__);                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        ReturnVoidInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new ReturnVoidInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+        }                                                                                                   \
+        operator ReturnVoidInst*() { return inst_; }                                                \
+        ReturnVoidInst *inst_ {};                                                                   \
     }
 
 

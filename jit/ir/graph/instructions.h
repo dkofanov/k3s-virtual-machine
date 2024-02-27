@@ -1,5 +1,7 @@
 
 #pragma once
+
+#include "../../common.h"
 #include <iostream>
 #include <iomanip>
 
@@ -88,20 +90,20 @@ using If = ConditionalMixin::If;
 
 class User {
 public:
+    Inst *GetInst() const
+    {
+        auto user = FindSpecialUser();
+        auto inst = user->ExtractPointerToInst();
+        return inst;
+    }
+
     Inst *GetUserInst() const
     {
-        const User *user = this;
-        size_t i = 0;
-
-        while (!user->IsSpecial()) {
-            // Users are always stored in a special-terminated array (whether dynamic or static)
-            user++;
-        }
-
-        // This idx is also corresponds to the input:
-        auto inst = user->ExtractPointerToInst();
+        const User *sp_user = FindSpecialUser();
+        auto inst = sp_user->ExtractPointerToInst();
         size_t inputs_count = inst->GetInputsCount();
-        size_t user_idx = inputs_count - (user - this);
+        // This idx is also corresponds to the input:
+        size_t user_idx = inputs_count - (sp_user - this);
 
         auto *user_inst = inst->GetInput(user_idx);
 
@@ -201,6 +203,17 @@ private:
     void SetNext(User *next)
     {
         next_or_inst_ = reinterpret_cast<uintptr_t>(next);
+    }
+
+    const User *FindSpecialUser() const
+    {
+        const User *user = this;
+
+        while (!user->IsSpecial()) {
+            // Users are always stored in a special-terminated array (whether dynamic or static)
+            user++;
+        }
+        return user;
     }
 
     bool IsSpecial(uintptr_t word) const

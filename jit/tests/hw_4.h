@@ -4,22 +4,22 @@ using namespace compiler;
 
 namespace hw4_linear_order {
     GRAPH(g1,
-        BLOCK(b0, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b1, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b2, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b3, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b4, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b5, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b6, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b7, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b8, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b9, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b10, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b11, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b12, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b13, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b14, CONST(Type::INT64, 1) dummy; );
-        BLOCK(b15, CONST(Type::INT64, 1) dummy; );
+        BLOCK(b0, );
+        BLOCK(b1, );
+        BLOCK(b2, );
+        BLOCK(b3, );
+        BLOCK(b4, );
+        BLOCK(b5, );
+        BLOCK(b6, );
+        BLOCK(b7, );
+        BLOCK(b8, );
+        BLOCK(b9, );
+        BLOCK(b10, );
+        BLOCK(b11, );
+        BLOCK(b12, );
+        BLOCK(b13, );
+        BLOCK(b14, );
+        BLOCK(b15, );
     
         EDGES(
             b0 --> b2 --> (b4, b3);
@@ -47,23 +47,24 @@ namespace hw4_linear_order {
         g1->AnalyzeLoops();
         g1->BuildLinearOrder();
         const auto &lo = g1->GetLinearOrder();
-        ASSERT(lo.size() == 16U);
-        ASSERT(lo[0]  == g1.b0);
-        ASSERT(lo[1]  == g1.b2);
-        ASSERT(lo[2]  == g1.b4);
-        ASSERT(lo[3]  == g1.b5);
-        ASSERT(lo[4]  == g1.b11);
-        ASSERT(lo[5]  == g1.b12);
-        ASSERT(lo[6]  == g1.b13); 
-        ASSERT(lo[7]  == g1.b1);
-        ASSERT(lo[8]  == g1.b3);
-        ASSERT(lo[9]  == g1.b6);
-        ASSERT(lo[10] == g1.b7);
-        ASSERT(lo[11] == g1.b8);
-        ASSERT(lo[12] == g1.b9);
-        ASSERT(lo[13] == g1.b10);
-        ASSERT(lo[14] == g1.b14);
-        ASSERT(lo[15] == g1.b15);
+        ASSERT(lo.size() == 17U);
+        ASSERT(lo[0].block == g1.b0);
+        ASSERT(lo[1].block == g1.b2);
+        ASSERT(lo[2].block == g1.b4);
+        ASSERT(lo[3].block == g1.b5);
+        ASSERT(lo[4].block == g1.b11);
+        ASSERT(lo[5].block == g1.b12);
+        ASSERT(lo[6].block == g1.b13); 
+        ASSERT(lo[7].block == g1.b1);
+        ASSERT(lo[8].block == g1.b3);
+        ASSERT(lo[9].block == g1.b6);
+        ASSERT(lo[10].block == g1.b7);
+        ASSERT(lo[11].block == g1.b8);
+        ASSERT(lo[12].block == g1.b9);
+        ASSERT(lo[13].block == g1.b10);
+        ASSERT(lo[14].block == g1.b14);
+        ASSERT(lo[15].block == g1.b15);
+        ASSERT(lo[16].block == nullptr);
 
         g1->BuildLiveness();
 

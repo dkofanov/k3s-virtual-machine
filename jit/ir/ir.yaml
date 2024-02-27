@@ -24,6 +24,8 @@ instructions:
     argc: 2
     mixins:
     - Conditional
+    props:
+    - no_dst
 
   - opcode: Parameter
     argc: 0
@@ -34,3 +36,9 @@ instructions:
     argc: 1
     mixins:
     - Typed
+    props:
+    - no_dst
+  - opcode: ReturnVoid
+    argc: 0
+    props:
+    - no_dst

@@ -10,7 +10,21 @@ public:
         JMP,
         PARAMETER,
         RETURN,
+        RETURNVOID,
     };
+
+
+    bool HasDst()
+    {
+        switch (opcode_) {
+        case JMP:
+        case RETURN:
+        case RETURNVOID:
+            return false;
+        default:
+            return true;
+        }
+    }
 
     bool IsConst() const { return opcode_ == CONST; }
     auto AsConst() const;
@@ -36,6 +50,9 @@ public:
     bool IsReturn() const { return opcode_ == RETURN; }
     auto AsReturn() const;
     auto AsReturn();
+    bool IsReturnVoid() const { return opcode_ == RETURNVOID; }
+    auto AsReturnVoid() const;
+    auto AsReturnVoid();
 
     Inst(Opcode opcode);
 
@@ -90,6 +107,11 @@ public:
         return first_user_ != nullptr;
     }
 
+    auto *FirstUser() const
+    {
+        return first_user_;
+    }
+
 private:
     auto GetFirstUserRef()
     {
@@ -105,12 +127,12 @@ private:
             return true;
         }
     }
-    
+
 private:
     static constexpr uint8_t INPUTS_COUNT_ARRAY[] =
     {
         (uint8_t) -1,
- (uint8_t) 0,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) -1,  (uint8_t) 2,  (uint8_t) 0,  (uint8_t) 1,     
+ (uint8_t) 0,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) -1,  (uint8_t) 2,  (uint8_t) 0,  (uint8_t) 1,  (uint8_t) 0,     
     };
 
 private:

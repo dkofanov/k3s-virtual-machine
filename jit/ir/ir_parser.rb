@@ -11,6 +11,7 @@ class IRDesc
       raise "'argc' should be non-negative if specified" if data.argc && data.argc < 0
       @argc = data.argc == nil ? -1 : data.argc
       @mixins = data.mixins == nil ? [] : data.mixins 
+      @props = data.props == nil ? [] : data.props
     end
 
     def base_class_name
@@ -44,6 +45,10 @@ class IRDesc
 
     def is_fixed?
       @argc != -1
+    end
+    
+    def no_dst?
+      @props.include? "no_dst"
     end
 
     def argc

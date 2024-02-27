@@ -6,6 +6,7 @@ namespace compiler {
 
 class LinearOrder {
 public:
+
     LinearOrder(Graph *graph) : graph_(graph), mark_(graph->NewMarker())
     {
         ASSERT(graph_->IsLoopAnalysisValid());
@@ -13,10 +14,12 @@ public:
         size_t blocks_count = graph_->GetBlocksCount();
         linear_order_.reserve(blocks_count);
         DFS(graph_->GetEntryBlock());
-        ASSERT((blocks_count == linear_order_.size()) && "There are unreachable blocks");
+        // emplace number for the last block:
+        linear_order_.emplace_back(nullptr, life_number_);
+        ASSERT((blocks_count == linear_order_.size() - 1) && "There are unreachable blocks");
     }
     
-    auto &&GetBlocks()
+    auto GetLinearOrder() &&
     {
         return std::move(linear_order_);
     }
@@ -36,7 +39,6 @@ private:
             return;
         }
         bb->Mark(mark_);
-        linear_order_.emplace_back(bb);
         AssignLifeNumbers(bb);
 
         auto loop = bb->Loop();
@@ -92,6 +94,7 @@ private:
 
     void AssignLifeNumbers(BasicBlock *bb)
     {
+        linear_order_.emplace_back(bb, life_number_);
         for (auto phi : bb->GetPhis()) {
             phi->SetLifeNumber(life_number_);
         }
@@ -104,7 +107,7 @@ private:
 
 private:
     Graph *graph_{};
-    Vector<BasicBlock *> linear_order_;
+    Vector<Graph::LinearOrderElement> linear_order_;
     Marker mark_;
     size_t life_number_{};
 };
