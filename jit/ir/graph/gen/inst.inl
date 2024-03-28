@@ -5,6 +5,7 @@ public:
         CONST,
         PARAMETER,
         CAST,
+        CALL,
         RETURN,
         RETURNVOID,
         ADD,
@@ -24,6 +25,12 @@ public:
         ClearInputs();
         ReplaceInBB(inst);
         ReplaceUsersTo(inst);
+    }
+
+    void ReplaceWith(std::nullptr_t)
+    {
+        ClearInputs();
+        ReplaceInBB(nullptr);
     }
     
     bool HasDst()
@@ -47,6 +54,9 @@ public:
     bool IsCast() const { return opcode_ == CAST; }
     auto AsCast() const;
     auto AsCast();
+    bool IsCall() const { return opcode_ == CALL; }
+    auto AsCall() const;
+    auto AsCall();
     bool IsReturn() const { return opcode_ == RETURN; }
     auto AsReturn() const;
     auto AsReturn();
@@ -153,10 +163,13 @@ public:
         return first_user_;
     }
 
+    BasicBlock *SplitBlockAfter();
+    
 private:
     void RemoveUser(User *user);
     void ClearInputs();
     void ReplaceInBB(Inst *inst);
+    void ReplaceInBB(std::nullptr_t);
     void ReplaceUsersTo(Inst *inst);
 
     auto GetFirstUserRef()
@@ -167,6 +180,7 @@ private:
     bool IsFixed()
     {
         switch (opcode_) {
+        case CALL:
         case PHI:
             return false;
         default:
@@ -178,7 +192,7 @@ private:
     static constexpr uint8_t INPUTS_COUNT_ARRAY[] =
     {
         (uint8_t) -1,
- (uint8_t) 0,  (uint8_t) 0,  (uint8_t) 1,  (uint8_t) 1,  (uint8_t) 0,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 1,  (uint8_t) 1,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) -1,  (uint8_t) 2,     
+ (uint8_t) 0,  (uint8_t) 0,  (uint8_t) 1,  (uint8_t) -1,  (uint8_t) 1,  (uint8_t) 0,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 1,  (uint8_t) 1,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) -1,  (uint8_t) 2,     
     };
 
 private:

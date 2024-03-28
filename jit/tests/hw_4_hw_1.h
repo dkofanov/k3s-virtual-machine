@@ -39,12 +39,13 @@ namespace hw1_hw4_fact {
         test_fact->AnalyzeLoops();
         test_fact->BuildLinearOrder();
         auto lo = test_fact->GetLinearOrder();
-        ASSERT(lo.size() == 5);
+        ASSERT(lo.size() == 6);
         ASSERT(lo[0].block == test_fact.start);
         ASSERT(lo[1].block == test_fact.head);
         ASSERT(lo[2].block == test_fact.body);
         ASSERT(lo[3].block == test_fact.exit);
-        ASSERT(lo[4].block == nullptr);
+        ASSERT(lo[4].block == test_fact->GetEndBlock());
+        ASSERT(lo[5].block == nullptr);
         test_fact->BuildLiveness();
         test_fact->DumpLiveness();
 

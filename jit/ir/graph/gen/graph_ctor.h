@@ -6,6 +6,8 @@
 #include <initializer_list>
 
 namespace compiler {
+
+template <bool RESET_IDS>
 class GraphHolder
 {
 public:
@@ -26,30 +28,35 @@ public:
     const auto *GetGraph() const { return &g_; }
     auto *GetGraph() { return &g_; }
 private:
-    Graph g_;
+    Graph g_ { RESET_IDS };
 };
 
-#define GRAPH(GR, ...) \
-class Graph_##GR  {                                                         \
+#define GRAPH_CLASS(GR, RESET_IDS, ...) \
+class Graph_##GR                                                            \
+{                                                                           \
 public:                                                                     \
     Graph_##GR() {}                                                         \
-    void FG() { GR.FG(); }                                                  \
-    void BG() { GR.BG(); }                                                  \
-    operator Graph*() { return GR.GetGraph(); }                             \
-    Graph *operator->() { return GR.GetGraph(); }                           \
-    void Dump() { GR.GetGraph()->Dump(); }                                  \
-    void DumpRPO() { GR.GetGraph()->BuildRPO(); GR.GetGraph()->DumpRPO(); } \
+    void FG() { GH.FG(); }                                                  \
+    void BG() { GH.BG(); }                                                  \
+    operator Graph*() { return GH.GetGraph(); }                             \
+    Graph *operator->() { return GH.GetGraph(); }                           \
+    void Dump() { GH.GetGraph()->Dump(); }                                  \
+    void DumpRPO() { GH.GetGraph()->BuildRPO(); GH.GetGraph()->DumpRPO(); } \
 private:                                                                    \
-    inline static GraphHolder GR {};                                        \
+    inline static GraphHolder<RESET_IDS> GH {};                             \
 public:                                                                     \
     __VA_ARGS__                                                             \
 private:                                                                    \
     class GraphBG                                                           \
     {                                                                       \
     public:                                                                 \
-        GraphBG() { GR.BG(); }                                              \
+        GraphBG() { GH.BG(); }                                              \
     }; inline static GraphBG BG_##GR {};                                    \
-} GR {};
+}
+
+#define GRAPH(GR, ...) GRAPH_CLASS(GR, true, __VA_ARGS__) GR {};
+
+#define SUBGRAPH(GR, ...) GRAPH_CLASS(GR, false, __VA_ARGS__) GR {};
 
 class BlockCtorBase
 {
@@ -198,6 +205,7 @@ __VA_ARGS__;                                \
         {                                                                                                   \
             inst_ = new ConstInst (__VA_ARGS__);                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::CONST>(GRAPH, GRAPH->GetBlockById());                      \
         }                                                                                                   \
         /* init-list currently used only for inputs so `Inst *` should be enough */                         \
         ConstInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
@@ -209,6 +217,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::CONST>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator ConstInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -234,6 +243,7 @@ __VA_ARGS__;                                \
         {                                                                                                   \
             inst_ = new ParameterInst (__VA_ARGS__);                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::PARAMETER>(GRAPH, GRAPH->GetBlockById());                      \
         }                                                                                                   \
         /* init-list currently used only for inputs so `Inst *` should be enough */                         \
         ParameterInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
@@ -245,6 +255,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::PARAMETER>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator ParameterInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -276,10 +287,43 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::CAST>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator CastInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
         CastInst *inst_ {};                                                                   \
+    }
+
+
+#define CALL(...) CALL_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define CALL_INTERNAL(LINE, ...) CALL_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define CALL_INTERNAL_PASTE(LINE, ...) \
+    struct CallInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        CallInst_##LINE##_ctor (const CallInst_##LINE##_ctor &) = delete;       \
+        CallInst_##LINE##_ctor (CallInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        CallInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new CallInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::CALL>(GRAPH, GRAPH->GetBlockById());             \
+        }                                                                                                   \
+        operator CallInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        CallInst *inst_ {};                                                                   \
     }
 
 
@@ -307,6 +351,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::RETURN>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator ReturnInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -332,6 +377,7 @@ __VA_ARGS__;                                \
         {                                                                                                   \
             inst_ = new ReturnVoidInst (__VA_ARGS__);                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::RETURNVOID>(GRAPH, GRAPH->GetBlockById());                      \
         }                                                                                                   \
         /* init-list currently used only for inputs so `Inst *` should be enough */                         \
         ReturnVoidInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
@@ -343,6 +389,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::RETURNVOID>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator ReturnVoidInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -374,6 +421,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::ADD>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator AddInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -405,6 +453,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::SUB>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator SubInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -436,6 +485,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::MUL>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator MulInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -467,6 +517,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::NEG>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator NegInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -498,6 +549,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::NOT>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator NotInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -529,6 +581,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::XOR>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator XorInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -560,6 +613,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::ASHR>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator AshrInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -591,6 +645,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::SHL>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator ShlInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -622,6 +677,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::PHI>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator PhiInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \
@@ -653,6 +709,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::JMP>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator JmpInst*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \

@@ -129,8 +129,9 @@ public:
     LivenessAnalysis(Graph *graph) : graph_(graph)
     {  
         ASSERT(graph->IsLinearOrderValid());
+        ASSERT(!graph->IsSubgraph());
         if (graph->IsReducible()) {
-            blocks_live_set_.resize(graph->GetBlocksMaxId());
+            blocks_live_set_.resize(graph->UpperBlockId());
             CalculateLifeRanges();
             FillIntervals();
         }

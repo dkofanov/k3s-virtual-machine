@@ -19,6 +19,7 @@ namespace hw0
         
         BLOCK(b_true,
             SUB() sub {b_if.s0, b_if.s0};
+            RETURNVOID() r {};
         );
 
         BLOCK(b_false,
@@ -30,7 +31,8 @@ namespace hw0
         );
 
         EDGES(
-            entry --> b_if --> (b_true, b_false) --> last --> b_if;
+            entry --> b_if --> (b_true, b_false);
+            b_false --> last --> b_if;
         );
     );
 

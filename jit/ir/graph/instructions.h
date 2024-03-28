@@ -12,6 +12,15 @@ class User;
 
 #include "gen/inst.inl"
 
+template <Inst::Opcode OPC>
+void GraphInternalsFixup([[maybe_unused]] Graph *graph, [[maybe_unused]] BasicBlock *block)
+{
+}
+template <>
+void GraphInternalsFixup<Inst::RETURN>(Graph *graph, BasicBlock *block);
+template <>
+void GraphInternalsFixup<Inst::RETURNVOID>(Graph *graph, BasicBlock *block);
+
 class TypedMixin {
 public:
     enum class Type {
@@ -28,6 +37,7 @@ public:
         switch (type_) {
         case Type::FLOAT64: return "FLOAT64";
         case Type::INT64: return "INT64";
+        case Type::UINT64: return "UINT64";
         default: UNREACHABLE();
         }
     }

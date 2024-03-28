@@ -9,7 +9,7 @@ mkdir ir/graph/gen
 ruby ./ir/ir_parser.rb
 
 # Build some constructor tests:
-clang++-14 -std=c++20 tests/sample.cpp ir/graph/graph.cpp ir/graph/basic_block.cpp ir/graph/instructions.cpp -o sample
+clang++-14 -std=c++20 tests/sample.cpp ir/graph/graph.cpp ir/graph/basic_block.cpp ir/graph/instructions.cpp -o sample -ggdb3
 
 ./sample
 ```

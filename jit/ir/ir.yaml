@@ -17,6 +17,8 @@ instructions:
     argc: 1
     mixins:
     - Typed
+  
+  - opcode: Call
 
   - opcode: Return
     argc: 1
@@ -24,6 +26,7 @@ instructions:
     - Typed
     props:
     - no_dst
+
   - opcode: ReturnVoid
     argc: 0
     props:

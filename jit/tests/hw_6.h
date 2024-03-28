@@ -17,7 +17,7 @@ namespace hw6_peepholes {
         g_xor_1->BuildRPO();
         g_xor_1->ApplyPeepholes();
 
-        ASSERT(g_xor_1->GetBlocksCount() == 1U);
+        ASSERT(g_xor_1->GetBlocksCount() == 2U);
 
         auto inst_it = g_xor_1.b0->GetAllInsts();
         ASSERT(inst_it->IsParameter());
@@ -54,7 +54,7 @@ namespace hw6_peepholes {
         g_xor_2->BuildRPO();
         g_xor_2->ApplyPeepholes();
 
-        ASSERT(g_xor_2->GetBlocksCount() == 1U);
+        ASSERT(g_xor_2->GetBlocksCount() == 2U);
 
         auto inst_it = g_xor_2.b0->GetAllInsts();
         ASSERT(inst_it->IsParameter());
@@ -98,7 +98,7 @@ namespace hw6_peepholes {
         g_xor_3->BuildRPO();
         g_xor_3->ApplyPeepholes();
 
-        ASSERT(g_xor_3->GetBlocksCount() == 1U);
+        ASSERT(g_xor_3->GetBlocksCount() == 2U);
 
         auto inst_it = g_xor_3.b0->GetAllInsts();
         ASSERT(inst_it->IsConst());
@@ -136,7 +136,7 @@ namespace hw6_peepholes {
         g_xor_4->BuildRPO();
         g_xor_4->ApplyPeepholes();
 
-        ASSERT(g_xor_4->GetBlocksCount() == 1U);
+        ASSERT(g_xor_4->GetBlocksCount() == 2U);
 
         auto inst_it = g_xor_4.b0->GetAllInsts();
         ASSERT(inst_it->IsConst());
@@ -189,7 +189,7 @@ namespace hw6_peepholes {
         g_sub_1->BuildRPO();
         g_sub_1->ApplyPeepholes();
 
-        ASSERT(g_sub_1->GetBlocksCount() == 1U);
+        ASSERT(g_sub_1->GetBlocksCount() == 2U);
 
         auto inst_it = g_sub_1.b0->GetAllInsts();
         ASSERT(inst_it->IsConst());
@@ -235,7 +235,7 @@ namespace hw6_peepholes {
         g_sub_2->BuildRPO();
         g_sub_2->ApplyPeepholes();
 
-        ASSERT(g_sub_2->GetBlocksCount() == 1U);
+        ASSERT(g_sub_2->GetBlocksCount() == 2U);
 
         auto inst_it = g_sub_2.b0->GetAllInsts();
         ASSERT(inst_it->IsParameter());
@@ -284,7 +284,7 @@ namespace hw6_peepholes {
         g_sub_3->BuildRPO();
         g_sub_3->ApplyPeepholes();
 
-        ASSERT(g_sub_3->GetBlocksCount() == 1U);
+        ASSERT(g_sub_3->GetBlocksCount() == 2U);
 
         auto inst_it = g_sub_3.b0->GetAllInsts();
         ASSERT(inst_it->IsParameter());
@@ -339,7 +339,7 @@ namespace hw6_peepholes {
         g_sub_4->BuildRPO();
         g_sub_4->ApplyPeepholes();
 
-        ASSERT(g_sub_4->GetBlocksCount() == 1U);
+        ASSERT(g_sub_4->GetBlocksCount() == 2U);
 
         auto inst_it = g_sub_4.b0->GetAllInsts();
         ASSERT(inst_it->IsParameter());
@@ -382,7 +382,7 @@ namespace hw6_peepholes {
         g_sub_5->BuildRPO();
         g_sub_5->ApplyPeepholes();
 
-        ASSERT(g_sub_5->GetBlocksCount() == 1U);
+        ASSERT(g_sub_5->GetBlocksCount() == 2U);
 
         auto inst_it = g_sub_5.b0->GetAllInsts();
         ASSERT(inst_it->IsParameter());
@@ -432,7 +432,7 @@ namespace hw6_peepholes {
         g_ashr_1->BuildRPO();
         g_ashr_1->ApplyPeepholes();
 
-        ASSERT(g_ashr_1->GetBlocksCount() == 1U);
+        ASSERT(g_ashr_1->GetBlocksCount() == 2U);
 
         auto inst_it = g_ashr_1.b0->GetAllInsts();
         ASSERT(inst_it->IsConst());
@@ -479,7 +479,7 @@ namespace hw6_peepholes {
         g_ashr_2->BuildRPO();
         g_ashr_2->ApplyPeepholes();
 
-        ASSERT(g_ashr_2->GetBlocksCount() == 1U);
+        ASSERT(g_ashr_2->GetBlocksCount() == 2U);
 
         auto inst_it = g_ashr_2.b0->GetAllInsts();
         ASSERT(inst_it->IsParameter());
@@ -532,7 +532,7 @@ namespace hw6_peepholes {
         g_ashr_3->BuildRPO();
         g_ashr_3->ApplyPeepholes();
 
-        ASSERT(g_ashr_3->GetBlocksCount() == 1U);
+        ASSERT(g_ashr_3->GetBlocksCount() == 2U);
 
         auto inst_it = g_ashr_3.b0->GetAllInsts();
         ASSERT(inst_it->IsParameter());

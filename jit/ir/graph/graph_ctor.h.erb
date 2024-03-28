@@ -6,6 +6,8 @@
 #include <initializer_list>
 
 namespace compiler {
+
+template <bool RESET_IDS>
 class GraphHolder
 {
 public:
@@ -26,30 +28,35 @@ public:
     const auto *GetGraph() const { return &g_; }
     auto *GetGraph() { return &g_; }
 private:
-    Graph g_;
+    Graph g_ { RESET_IDS };
 };
 
-#define GRAPH(GR, ...) \
-class Graph_##GR  {                                                         \
+#define GRAPH_CLASS(GR, RESET_IDS, ...) \
+class Graph_##GR                                                            \
+{                                                                           \
 public:                                                                     \
     Graph_##GR() {}                                                         \
-    void FG() { GR.FG(); }                                                  \
-    void BG() { GR.BG(); }                                                  \
-    operator Graph*() { return GR.GetGraph(); }                             \
-    Graph *operator->() { return GR.GetGraph(); }                           \
-    void Dump() { GR.GetGraph()->Dump(); }                                  \
-    void DumpRPO() { GR.GetGraph()->BuildRPO(); GR.GetGraph()->DumpRPO(); } \
+    void FG() { GH.FG(); }                                                  \
+    void BG() { GH.BG(); }                                                  \
+    operator Graph*() { return GH.GetGraph(); }                             \
+    Graph *operator->() { return GH.GetGraph(); }                           \
+    void Dump() { GH.GetGraph()->Dump(); }                                  \
+    void DumpRPO() { GH.GetGraph()->BuildRPO(); GH.GetGraph()->DumpRPO(); } \
 private:                                                                    \
-    inline static GraphHolder GR {};                                        \
+    inline static GraphHolder<RESET_IDS> GH {};                             \
 public:                                                                     \
     __VA_ARGS__                                                             \
 private:                                                                    \
     class GraphBG                                                           \
     {                                                                       \
     public:                                                                 \
-        GraphBG() { GR.BG(); }                                              \
+        GraphBG() { GH.BG(); }                                              \
     }; inline static GraphBG BG_##GR {};                                    \
-} GR {};
+}
+
+#define GRAPH(GR, ...) GRAPH_CLASS(GR, true, __VA_ARGS__) GR {};
+
+#define SUBGRAPH(GR, ...) GRAPH_CLASS(GR, false, __VA_ARGS__) GR {};
 
 class BlockCtorBase
 {
@@ -205,6 +212,7 @@ __VA_ARGS__;                                \
         {                                                                                                   \
             inst_ = new <%= inst_class_name %> (__VA_ARGS__);                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::<%= inst.opcode.upcase %>>(GRAPH, GRAPH->GetBlockById());                      \
         }                                                                                                   \
 % end
         /* init-list currently used only for inputs so `Inst *` should be enough */                         \
@@ -217,6 +225,7 @@ __VA_ARGS__;                                \
                 i++;                                                                                        \
             }                                                                                               \
             AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::<%= inst.opcode.upcase %>>(GRAPH, GRAPH->GetBlockById());             \
         }                                                                                                   \
         operator <%= inst_class_name %>*() { return inst_; }                                                \
         auto *operator->() { return inst_; }                                               \

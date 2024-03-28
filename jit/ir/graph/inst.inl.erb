@@ -13,6 +13,12 @@ public:
         ReplaceInBB(inst);
         ReplaceUsersTo(inst);
     }
+
+    void ReplaceWith(std::nullptr_t)
+    {
+        ClearInputs();
+        ReplaceInBB(nullptr);
+    }
     
     bool HasDst()
     {
@@ -103,10 +109,13 @@ public:
         return first_user_;
     }
 
+    BasicBlock *SplitBlockAfter();
+    
 private:
     void RemoveUser(User *user);
     void ClearInputs();
     void ReplaceInBB(Inst *inst);
+    void ReplaceInBB(std::nullptr_t);
     void ReplaceUsersTo(Inst *inst);
 
     auto GetFirstUserRef()

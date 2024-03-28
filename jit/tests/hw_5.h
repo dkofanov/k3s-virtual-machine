@@ -37,12 +37,13 @@ namespace hw5_linear_scan {
         g_loop->AnalyzeLoops();
         g_loop->BuildLinearOrder();
         const auto &lo = g_loop->GetLinearOrder();
-        ASSERT(lo.size() == 5U);
+        ASSERT(lo.size() == 6U);
         ASSERT(lo[0].block == g_loop.b0);
         ASSERT(lo[1].block == g_loop.b1);
         ASSERT(lo[2].block == g_loop.b2);
         ASSERT(lo[3].block == g_loop.b3);
-        ASSERT(lo[4].block == nullptr);
+        ASSERT(lo[4].block == g_loop->GetEndBlock());
+        ASSERT(lo[5].block == nullptr);
 
         g_loop->BuildLiveness();
         g_loop->DumpLiveness();
@@ -184,7 +185,7 @@ v9:
         g_phiAfterIfElse->AnalyzeLoops();
         g_phiAfterIfElse->BuildLinearOrder();
         const auto &lo = g_phiAfterIfElse->GetLinearOrder();
-        ASSERT(lo.size() == 8U);
+        ASSERT(lo.size() == 9U);
         ASSERT(lo[0].block == g_phiAfterIfElse.b0);
         ASSERT(lo[1].block == g_phiAfterIfElse.b_if);
         ASSERT(lo[2].block == g_phiAfterIfElse.b_true);
@@ -192,7 +193,8 @@ v9:
         ASSERT(lo[4].block == g_phiAfterIfElse.b_false);
         ASSERT(lo[5].block == g_phiAfterIfElse.b_false_cont);
         ASSERT(lo[6].block == g_phiAfterIfElse.b_ret);
-        ASSERT(lo[7].block == nullptr);
+        ASSERT(lo[7].block == g_phiAfterIfElse->GetEndBlock());
+        ASSERT(lo[8].block == nullptr);
 
         g_phiAfterIfElse->BuildLiveness();
         g_phiAfterIfElse->DumpLiveness();
@@ -350,12 +352,13 @@ GRAPH(g_loopSideExit,
         g_loopSideExit->AnalyzeLoops();
         g_loopSideExit->BuildLinearOrder();
         const auto &lo = g_loopSideExit->GetLinearOrder();
-        ASSERT(lo.size() == 5U);
+        ASSERT(lo.size() == 6U);
         ASSERT(lo[0].block == g_loopSideExit.b0);
         ASSERT(lo[1].block == g_loopSideExit.b1);
         ASSERT(lo[2].block == g_loopSideExit.b2);
         ASSERT(lo[3].block == g_loopSideExit.b3);
-        ASSERT(lo[4].block == nullptr);
+        ASSERT(lo[4].block == g_loopSideExit->GetEndBlock());
+        ASSERT(lo[5].block == nullptr);
 
         g_loopSideExit->BuildLiveness();
         g_loopSideExit->DumpLiveness();

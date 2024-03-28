@@ -14,6 +14,8 @@ public:
     static constexpr size_t FALSE_SUCC_IDX = 1;
 
     BasicBlock();
+    BasicBlock(Graph *g);
+
     void SetId(size_t id)
     {
         id_ = id;
@@ -27,7 +29,7 @@ public:
         succs_[TRUE_SUCC_IDX] = t_succ;
         succs_[FALSE_SUCC_IDX] = f_succ;
         t_succ->preds_.push_back(this);
-        f_succ->preds_.push_back(this);        
+        f_succ->preds_.push_back(this);
     }
 
     void SetSucc(BasicBlock *succ)
@@ -134,13 +136,13 @@ public:
     auto FirstInst() const { return first_inst_; }
     void SetFirstInst(Inst *inst)
     {
-        ASSERT(!inst->IsPhi());
+        ASSERT((inst == nullptr) || !inst->IsPhi());
         first_inst_ = inst;
     }
     auto LastInst() const { return last_inst_; }
     void SetLastInst(Inst *inst)
     {
-        ASSERT(!inst->IsPhi());
+        ASSERT((inst == nullptr) || !inst->IsPhi());
         last_inst_ = inst;
     }
 
@@ -215,6 +217,21 @@ public:
     auto GetAllInsts() const
     {
         return AllInstIter(this);
+    }
+
+    void FindAndReplaceInPreds(BasicBlock *find, BasicBlock *replace)
+    {
+        ASSERT(find != replace);
+        auto it = std::find(preds_.begin(), preds_.end(), find);
+        ASSERT(it != preds_.end());
+        *it = replace;
+        ASSERT(std::find(preds_.begin(), preds_.end(), find) == preds_.end());
+    }
+    
+    void MoveSuccsFrom(BasicBlock *bb)
+    {
+        succs_ = std::move(bb->succs_);
+        bb->succs_.clear();
     }
 
 private:

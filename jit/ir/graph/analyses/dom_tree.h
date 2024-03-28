@@ -8,6 +8,7 @@ class DomTree {
 public:
     DomTree(Graph *graph) : graph_(graph), mark_(graph->NewMarker())
     {
+        ASSERT(!graph_->IsSubgraph());
         EnumerateBlocks();
         CollectSemiDoms();
         CollectIdoms();
@@ -21,7 +22,7 @@ public:
 private:
     void EnumerateBlocks()
     {
-        size_t blocks_count = graph_->GetBlocksMaxId();
+        size_t blocks_count = graph_->UpperBlockId();
         v_numbers_.resize(blocks_count);
         sorted_.resize(blocks_count);
         spanning_tree_imm_anc_.resize(blocks_count);
@@ -33,7 +34,7 @@ private:
             // There are unreachable blocks.
             UNREACHABLE();
         }
-        ASSERT(v_numbers_[0] == 1);
+        ASSERT(v_numbers_[graph_->GetEntryBlock()->Id()] == 1);
     }
 
     void DFS(BasicBlock *bb, size_t *idx)
@@ -120,10 +121,10 @@ private:
 
     void CollectIdoms()
     {
-        idoms_[0] = graph_->GetEntryBlock();
+        idoms_[graph_->GetEntryBlock()->Id()] = graph_->GetEntryBlock();
         for (auto bb_it = sorted_.rbegin() + 1; bb_it != sorted_.rend(); ++bb_it) {
             auto bb = *bb_it;
-            ASSERT(bb->Id() != 0);
+            ASSERT(bb->Id() != graph_->GetEntryBlock()->Id());
             auto *semidom = semidoms_[bb->Id()];
             ASSERT(semidom != nullptr);
             size_t u = bb->Id();
@@ -133,7 +134,7 @@ private:
                 if (NumOf(semidoms_[u]) < NumOf(semidoms_[u_min])) {
                     u_min = u;
                 }
-                ASSERT(u != 0);
+                ASSERT(u != graph_->GetEntryBlock()->Id());
                 u = spanning_tree_imm_anc_[u];
             }
             if (NumOf(semidoms_[u_min]) == NumOf(semidoms_[bb->Id()])) {
@@ -167,8 +168,8 @@ class DomTreeCheck {
 public:
     DomTreeCheck(Graph *graph) : graph_(graph)
     {
-        reached_blocks_.resize(graph_->GetBlocksMaxId());
-        all_blocks_.resize(graph_->GetBlocksMaxId());
+        reached_blocks_.resize(graph_->UpperBlockId());
+        all_blocks_.resize(graph_->UpperBlockId());
         
         CollectBlocks(graph_->GetEntryBlock());
         std::swap(reached_blocks_, all_blocks_);

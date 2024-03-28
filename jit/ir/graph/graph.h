@@ -24,17 +24,26 @@ struct Location {
 
 class Graph {
 public:
-    Graph()
+    static constexpr size_t ENTRY_BLOCK_IDX = 1;
+    static constexpr size_t END_BLOCK_IDX = 0;
+
+    Graph(bool reset_ids)
+    : blocks_id_offset_(reset_ids ? 0 : BLOCK_ID_)
     {
-        // tmp solution for avoiding relocations.
-        // TBD: replace to vector of pointers.
-        blocks_.reserve(100);
+        if (reset_ids) {
+            ResetIds();
+        }
+        // Create end-block:
+        NewBB();
     }
 
-    auto NewBB()
+    size_t NewBB()
     {
-        blocks_.emplace_back();
-        return blocks_.size() - 1;
+        ASSERT(BlockOffsetById(BLOCK_ID_ + 1) > blocks_.size());
+        blocks_.resize(BlockOffsetById(BLOCK_ID_ + 1));
+        blocks_[BlockOffsetById(BLOCK_ID_)] = new BasicBlock(this); 
+        BLOCK_ID_++;
+        return UpperBlockId() - 1;
     }
 
     template <typename T, typename... Args>
@@ -44,33 +53,55 @@ public:
         return new T(std::forward<Args>(args)...);
     }
 
-    auto IncInstId()
+    static auto MaxInstId()
     {
-        inst_id_++;
-        return inst_id_;
-    }    
-    auto GetBlocksMaxId()
+        return INST_ID_;
+    }
+
+    bool IsSubgraph()
     {
-        return blocks_.size();
+        return blocks_id_offset_ != 0;
+    }
+
+    static auto IncInstId()
+    {
+        INST_ID_++;
+        return INST_ID_;
+    }
+    size_t UpperBlockId()
+    {
+        return blocks_id_offset_ + blocks_.size();
+    }
+
+    const auto &GetBlocks()
+    {
+        return blocks_;
     }
     auto GetBlocksCount()
     {
-        return blocks_.size();
+        auto nils = std::count(blocks_.begin(), blocks_.end(), nullptr);
+        return blocks_.size() - nils;
     }
+
     auto *GetBlockById()
     {
-        return &blocks_[blocks_.size() - 1];
+        return blocks_.back();
     }
     auto *GetBlockById(size_t id)
     {
-        ASSERT(id < blocks_.size());
-        return &blocks_[id];
+        return blocks_[BlockOffsetById(id)];
     }
     auto *GetEntryBlock()
     {
-        auto *start = GetBlockById(0);
+        auto *start = blocks_[ENTRY_BLOCK_IDX];
         ASSERT(start->Preds().size() == 0);
         return start;
+    }
+    auto *GetEndBlock()
+    {
+        auto *end = blocks_[END_BLOCK_IDX];
+        ASSERT(end->Succs().size() == 0);
+        return end;
     }
 
     void BuildDomTree();
@@ -152,6 +183,41 @@ public:
     void AllocateRegisters();
 
     void ApplyPeepholes();
+
+    void ApplyInlining(size_t depth = 0);
+    // TODO: rework when IRBuilder is implemented:
+    void SetCalleeInfo(Graph *callee)
+    {
+        callee_ = callee;
+    }
+    Graph *GetCalleeInfo([[maybe_unused]] CallInst *call)
+    {
+        return callee_;
+    }
+    void InsertInto(Graph *target)
+    {
+        // Check that target graph has null-blocks for the corresponding ids (a hole of nullptrs in `blocks_`).
+        // It is natural for a sitatuion when after building of a subgraph some blocks are created in `target`-graph.
+        // If there was no such creation it is likely bug-prone situation, in which
+        // some required landing-blocks weren't created before insertion of the subgraph.
+        ASSERT(blocks_id_offset_ > target->blocks_id_offset_);
+        ASSERT(UpperBlockId() < target->UpperBlockId());
+        auto id_begin = blocks_id_offset_;
+        auto id_end = UpperBlockId();
+        ASSERT(target->IsValidBlockId(id_begin));
+        ASSERT(target->IsValidBlockId(id_end));
+
+        auto nils = std::count_if(blocks_.begin(), blocks_.end(), [](auto b) { return b == nullptr; });
+        ASSERT(nils == 0);
+       
+        auto begin = target->blocks_.begin() + target->BlockOffsetById(id_begin); 
+        auto end = target->blocks_.begin() + target->BlockOffsetById(id_end); 
+        auto nnils = std::count_if(begin, end, [](auto b) { return b != nullptr; });
+        ASSERT(nnils == 0);
+
+        std::copy(blocks_.begin(), blocks_.end(), begin);
+    }
+
     void DumpRPO() const;
     void DumpLiveness() const;
     void DumpRegalloc() const;
@@ -164,10 +230,31 @@ public:
         BasicBlock *block{};
         size_t ln{};
     };
+
 private:
-    size_t inst_id_{};
+    bool IsValidBlockId(size_t id)
+    {
+        return BlockOffsetById(id) < blocks_.size();
+    }
+
+    size_t BlockOffsetById(size_t id)
+    {
+        id -= blocks_id_offset_;
+        return id;
+    }
+    static void ResetIds()
+    {
+        BLOCK_ID_ = 0;
+        INST_ID_ = 0;
+    }
+
+private:
+    static size_t BLOCK_ID_;
+    static size_t INST_ID_;
+private:
     Marker marker_;
-    Vector<BasicBlock> blocks_{};
+    const size_t blocks_id_offset_{};
+    Vector<BasicBlock *> blocks_{};
     
     Vector<BasicBlock *> rpo_{};
     
@@ -183,6 +270,8 @@ private:
 
     size_t slots_used_{};
     Map<const LiveRange *, Location> locations_{};
+
+    Graph *callee_{};
 };
 
 

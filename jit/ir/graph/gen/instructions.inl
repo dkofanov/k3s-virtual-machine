@@ -2,9 +2,9 @@
 class ConstInst : public FixedInputsInst<0>, public TypedMixin, public ImmediateMixin
 {
 public:
-    template <typename Arg_TypedMixin, typename Arg_ImmediateMixin>
-    ConstInst(Arg_TypedMixin &&arg_TypedMixin, Arg_ImmediateMixin &&arg_ImmediateMixin)
-    : FixedInputsInst<0>(Opcode::CONST), TypedMixin(arg_TypedMixin), ImmediateMixin(arg_ImmediateMixin)
+    template <typename Arg_Typed, typename Arg_Immediate>
+    ConstInst(Arg_Typed &&arg_Typed, Arg_Immediate &&arg_Immediate)
+    : FixedInputsInst<0>(Opcode::CONST), TypedMixin(arg_Typed), ImmediateMixin(arg_Immediate)
     {}
 
     template <bool DUMP_LIVENESS = false>
@@ -36,9 +36,9 @@ inline auto Inst::AsConst() const
 class ParameterInst : public FixedInputsInst<0>, public TypedMixin
 {
 public:
-    template <typename Arg_TypedMixin>
-    ParameterInst(Arg_TypedMixin &&arg_TypedMixin)
-    : FixedInputsInst<0>(Opcode::PARAMETER), TypedMixin(arg_TypedMixin)
+    template <typename Arg_Typed>
+    ParameterInst(Arg_Typed &&arg_Typed)
+    : FixedInputsInst<0>(Opcode::PARAMETER), TypedMixin(arg_Typed)
     {}
 
     template <bool DUMP_LIVENESS = false>
@@ -70,9 +70,9 @@ inline auto Inst::AsParameter() const
 class CastInst : public FixedInputsInst<1>, public TypedMixin
 {
 public:
-    template <typename Arg_TypedMixin>
-    CastInst(Arg_TypedMixin &&arg_TypedMixin)
-    : FixedInputsInst<1>(Opcode::CAST), TypedMixin(arg_TypedMixin)
+    template <typename Arg_Typed>
+    CastInst(Arg_Typed &&arg_Typed)
+    : FixedInputsInst<1>(Opcode::CAST), TypedMixin(arg_Typed)
     {}
 
     template <bool DUMP_LIVENESS = false>
@@ -101,12 +101,46 @@ inline auto Inst::AsCast() const
 {
     return static_cast<const CastInst *>(this);
 }
+class CallInst : public VariadicInputsInst, public ImplicitlyTypedMixin
+{
+public:
+    
+    CallInst(size_t inputs_count)
+    : VariadicInputsInst(inputs_count, Opcode::CALL)
+    {}
+
+    template <bool DUMP_LIVENESS = false>
+    auto &Dump() 
+    {
+        std::ios state(nullptr);
+        state.copyfmt(std::cout);
+        
+        std::cout <<  "        " << std::setw(20) << std::left <<  "CALL" << std::setw(0) << "(" ;
+        ImplicitlyTypedMixin::Dump(); 
+        std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
+        DumpDF();
+        std::cout.copyfmt(state);
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
+    } 
+};
+
+inline auto Inst::AsCall()
+{
+    return static_cast<CallInst *>(this);
+}
+
+inline auto Inst::AsCall() const
+{
+    return static_cast<const CallInst *>(this);
+}
 class ReturnInst : public FixedInputsInst<1>, public TypedMixin
 {
 public:
-    template <typename Arg_TypedMixin>
-    ReturnInst(Arg_TypedMixin &&arg_TypedMixin)
-    : FixedInputsInst<1>(Opcode::RETURN), TypedMixin(arg_TypedMixin)
+    template <typename Arg_Typed>
+    ReturnInst(Arg_Typed &&arg_Typed)
+    : FixedInputsInst<1>(Opcode::RETURN), TypedMixin(arg_Typed)
     {}
 
     template <bool DUMP_LIVENESS = false>
@@ -478,9 +512,9 @@ inline auto Inst::AsPhi() const
 class JmpInst : public FixedInputsInst<2>, public ConditionalMixin
 {
 public:
-    template <typename Arg_ConditionalMixin>
-    JmpInst(Arg_ConditionalMixin &&arg_ConditionalMixin)
-    : FixedInputsInst<2>(Opcode::JMP), ConditionalMixin(arg_ConditionalMixin)
+    template <typename Arg_Conditional>
+    JmpInst(Arg_Conditional &&arg_Conditional)
+    : FixedInputsInst<2>(Opcode::JMP), ConditionalMixin(arg_Conditional)
     {}
 
     template <bool DUMP_LIVENESS = false>
@@ -517,6 +551,7 @@ inline void Inst::Dump()
     case CONST: AsConst()->Dump<DUMP_LIVENESS>(); break;
     case PARAMETER: AsParameter()->Dump<DUMP_LIVENESS>(); break;
     case CAST: AsCast()->Dump<DUMP_LIVENESS>(); break;
+    case CALL: AsCall()->Dump<DUMP_LIVENESS>(); break;
     case RETURN: AsReturn()->Dump<DUMP_LIVENESS>(); break;
     case RETURNVOID: AsReturnVoid()->Dump<DUMP_LIVENESS>(); break;
     case ADD: AsAdd()->Dump<DUMP_LIVENESS>(); break;
@@ -550,6 +585,11 @@ inline void Inst::SetInput(size_t i, Inst *inst)
     case CAST:
     {
         AsCast()->SetInput<NEED_UPDATE_USER>(i, inst);
+        return;
+    }
+    case CALL:
+    {
+        AsCall()->SetInput<NEED_UPDATE_USER>(i, inst);
         return;
     }
     case RETURN:
@@ -623,6 +663,7 @@ inline Inst *Inst::GetInput(size_t i)
     case CONST: return AsConst()->GetInput(i);
     case PARAMETER: return AsParameter()->GetInput(i);
     case CAST: return AsCast()->GetInput(i);
+    case CALL: return AsCall()->GetInput(i);
     case RETURN: return AsReturn()->GetInput(i);
     case RETURNVOID: return AsReturnVoid()->GetInput(i);
     case ADD: return AsAdd()->GetInput(i);
@@ -645,6 +686,7 @@ inline User *Inst::GetUserPointee(size_t i)
     case CONST: return AsConst()->GetUserPointee(i);
     case PARAMETER: return AsParameter()->GetUserPointee(i);
     case CAST: return AsCast()->GetUserPointee(i);
+    case CALL: return AsCall()->GetUserPointee(i);
     case RETURN: return AsReturn()->GetUserPointee(i);
     case RETURNVOID: return AsReturnVoid()->GetUserPointee(i);
     case ADD: return AsAdd()->GetUserPointee(i);
@@ -667,6 +709,7 @@ inline Span<Inst *> Inst::GetInputs()
     case CONST: return AsConst()->GetInputs();
     case PARAMETER: return AsParameter()->GetInputs();
     case CAST: return AsCast()->GetInputs();
+    case CALL: return AsCall()->GetInputs();
     case RETURN: return AsReturn()->GetInputs();
     case RETURNVOID: return AsReturnVoid()->GetInputs();
     case ADD: return AsAdd()->GetInputs();

@@ -7,21 +7,43 @@
 #include "analyses/liveness.h"
 #include "analyses/reg_alloc.h"
 #include "optimizations/peepholes.h"
+#include "optimizations/inlining.h"
 #include <cstddef>
 
 namespace compiler {
 
 Graph *GRAPH;
+size_t Graph::BLOCK_ID_ = 0;
+size_t Graph::INST_ID_ = 0;
 
-BasicBlock::BasicBlock() : id_(GRAPH->GetBlocksMaxId()) {}
+BasicBlock::BasicBlock() : id_(GRAPH->UpperBlockId() - 1) {}
+BasicBlock::BasicBlock(Graph *g) : id_(g->UpperBlockId() - 1) {}
 Inst::Inst(Opcode opcode) : opcode_(opcode), id_(GRAPH->IncInstId()) {}
+
+static void HandleRet(Graph *graph, BasicBlock *block)
+{
+    block->SetSucc(graph->GetEndBlock());
+}
+
+template <>
+void GraphInternalsFixup<Inst::RETURN>(Graph *graph, BasicBlock *block)
+{
+    HandleRet(graph, block);
+}
+
+template <>
+void GraphInternalsFixup<Inst::RETURNVOID>(Graph *graph, BasicBlock *block)
+{
+    HandleRet(graph, block);
+}
 
 void Inst::ReplaceInBB(Inst *inst)
 {
-    // TODO: Support phis.
-    ASSERT(!inst->IsPhi());
+    // TODO: Support this-phi.
+    ASSERT(!IsPhi());
     if (inst->bb_ == nullptr) {
-        // Insert:
+        // Remove `this` and insert `inst`:
+        ASSERT(!inst->IsPhi());
         if (bb_->FirstInst() == this) {
             bb_->SetFirstInst(inst);
         }
@@ -37,25 +59,28 @@ void Inst::ReplaceInBB(Inst *inst)
         next_ = nullptr;
         prev_ = nullptr;
     } else {
-        // Remove:
-        if (bb_->FirstInst() == this) {
-            bb_->SetFirstInst(next_);
-        }
-        if (bb_->LastInst() == this) {
-            bb_->SetLastInst(prev_);
-        }
-
-        if (prev_ != nullptr) {
-            prev_->next_ = next_;
-        }
-        if (next_ != nullptr) {
-            next_->prev_ = prev_;
-        }
-
-        bb_ = nullptr;
-        next_ = nullptr;
-        prev_ = nullptr;
+        // `inst` is already inserted. Just remove this:
+        ReplaceInBB(nullptr);
     }
+}
+
+void Inst::ReplaceInBB(std::nullptr_t)
+{
+    if (bb_->FirstInst() == this) {
+        ASSERT(prev_ == nullptr);
+        bb_->SetFirstInst(next_);
+    } else {
+        prev_->next_ = next_;
+    }
+    if (bb_->LastInst() == this) {
+        ASSERT(next_ == nullptr);
+        bb_->SetLastInst(prev_);
+    } else {
+        next_->prev_ = prev_;
+    }
+    bb_ = nullptr;
+    next_ = nullptr;
+    prev_ = nullptr;
 }
 
 void Inst::Prepend(Inst *inst)
@@ -109,6 +134,29 @@ void Inst::RemoveUser(User *user)
     }
 }
 
+BasicBlock *Inst::SplitBlockAfter()
+{
+    ASSERT(!IsPhi());
+
+    auto new_bb = GRAPH->GetBlockById(GRAPH->NewBB());
+    if (bb_->LastInst() != this) {
+        new_bb->SetLastInst(bb_->LastInst());
+        bb_->SetLastInst(this);
+        new_bb->SetFirstInst(next_);
+        next_->prev_ = nullptr;
+        next_ = nullptr;
+        for (auto inst : new_bb->GetInsts()) {
+            inst->bb_ = new_bb;
+        }
+    }
+    for (auto *succ : bb_->Succs()) {
+        succ->FindAndReplaceInPreds(bb_, new_bb);
+    }
+    new_bb->MoveSuccsFrom(bb_);
+    // bb_->SetSucc(new_bb);
+    return new_bb;
+}
+    
 Loop *Graph::NewLoop(BasicBlock *header)
 {
     if (header == nullptr) {
@@ -185,6 +233,11 @@ void Graph::ApplyPeepholes()
     Peepholes(this);
 }
 
+void Graph::ApplyInlining(size_t depth)
+{
+    Inlining(this, depth);
+}
+
 void Graph::DumpRPO() const
 {
     std::cout << "GRAPH(g0,\n"; \
@@ -204,15 +257,17 @@ void Graph::Dump() const
 {
     std::cout << "GRAPH(g0,\n"; \
     for (size_t i = 0; i < blocks_.size(); i++) {
-        std::cout << "    BLOCK(b" << blocks_[i].Id() << ",\n";
-        blocks_[i].Dump();
+        std::cout << "    BLOCK(b" << blocks_[i]->Id() << ",\n";
+        blocks_[i]->Dump();
         std::cout << "    );\n";
     }
-    std::cout << "/**\n";
-    std::cout << " Loops:\n";
-    root_loop_->Dump();
-    std::cout << "*/\n";
-    std::cout << ");\n";
+    if (root_loop_ != nullptr) {
+        std::cout << "/**\n";
+        std::cout << " Loops:\n";
+        root_loop_->Dump();
+        std::cout << "*/\n";
+        std::cout << ");\n";
+    }
 }
 
 void Graph::DumpLiveness() const
@@ -260,8 +315,9 @@ void Graph::DumpLiveness() const
         const auto &intervals = insts_live_intervals_.at(inst);
         auto interval_it = intervals.Intervals();
         auto interval_it_end = intervals.IntervalsEnd();
-
-        std::cout << std::setw(9) << (std::stringstream() << "v" << inst->Id() << "|").str();
+        std::stringstream ss;
+        ss << "v" << inst->Id() << "|";
+        std::cout << std::setw(9) << ss.str();
         for (size_t i = 0; i < last; i++) {
             if ((interval_it == interval_it_end) || (i < (*interval_it).Begin())) {
                 if (i % 2 == 0) {
@@ -377,8 +433,9 @@ void Graph::DumpRegalloc() const
         const auto &intervals = insts_live_intervals_.at(inst);
         auto interval_it = intervals.Intervals();
         auto interval_it_end = intervals.IntervalsEnd();
-
-        std::cout << std::setw(9) << (std::stringstream() << "v" << inst->Id() << "|").str();
+        std::stringstream ss;
+        ss << "v" << inst->Id() << "|";
+        std::cout << std::setw(9) << ss.str();
         for (size_t i = 0; i < last; i++) {
             if ((interval_it == interval_it_end) || (i < (*interval_it).Begin())) {
                 if (i % 2 == 0) {

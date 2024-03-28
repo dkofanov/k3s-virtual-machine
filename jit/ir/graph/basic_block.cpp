@@ -38,7 +38,11 @@ bool BasicBlock::IsHeader() const
 template <bool DUMP_LIVENESS>
 void BasicBlock::Dump() const
 {
-    std::cout << "    // Loop: " << loop_->Id() << "\n";
+    if (loop_ != nullptr) {
+        std::cout << "    // Loop: " << loop_->Id() << "\n";
+    } else {
+        std::cout << "    // Loop: unknown\n";
+    }
     std::cout << "    // Preds: { ";
     for (auto i : preds_) {
         std::cout << "b" << i->Id() << " ";

@@ -37,7 +37,7 @@ class IRDesc
       arr = []
       arr.append "public #{base_class_name}"
       mixins.each do |mixin|
-        arr.append "public #{mixin.str}"
+        arr.append "public #{mixin.to_cpp}"
       end
       arr.join(', ')
     end
@@ -91,10 +91,18 @@ class MixinDescr
   end
 
   def ==(other)
-    self.str  == other.str
+    if other.is_a? String
+      self.str == other
+    else 
+      self.str  == other.str
+    end
+  end
+  
+  def str
+    @str
   end
 
-  def str
+  def to_cpp
     @str + "Mixin"
   end
 end
@@ -114,14 +122,14 @@ def CtorArgList(inst)
 end
 
 def BaseClassInitialization(inst)
-    arr = inst.mixins.map { |mxn| mxn.HasCPPInitializer? ? "#{mxn.str}(arg_#{mxn.str})" : "" }
+    arr = inst.mixins.map { |mxn| mxn.HasCPPInitializer? ? "#{mxn.to_cpp}(arg_#{mxn.str})" : "" }
     arr.delete ""
     arr.prepend "#{inst.base_class_name}(#{inst.is_fixed? ?  "" : "inputs_count, " }Opcode::#{inst.opcode.upcase})"
     arr.join ", "
 end
 
 def AppendSuffix(list, suffix, sep=", ")
-    return list.collect{ |x| x.str + suffix.to_s }.join(sep)
+    return list.collect{ |x| x.to_cpp + suffix.to_s }.join(sep)
 end
 
 def ArgList(prefix, count)

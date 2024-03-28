@@ -4,6 +4,7 @@
 #include "hw_4_hw_1.h"
 #include "hw_5.h"
 #include "hw_6.h"
+#include "hw_7.h"
 
 #define CLR_PREF(v) "\033[1;" #v "m"
 #define CLR_SUFF() "\033[0m"
@@ -23,6 +24,7 @@ int main()
     RUN_TEST(hw1_hw4_fact);
     RUN_TEST(hw5_linear_scan);
     RUN_TEST(hw6_peepholes);
+    RUN_TEST(hw7_inlining);
 
     return 0;
 }

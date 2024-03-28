@@ -8,7 +8,7 @@ namespace hw2_hw3_doms_and_loops {
         BLOCK(A, CONST(Type::INT64, 1) dummy; );
         BLOCK(B, CONST(Type::INT64, 1) dummy; );
         BLOCK(C, CONST(Type::INT64, 1) dummy; );
-        BLOCK(D, CONST(Type::INT64, 1) dummy; );
+        BLOCK(D, RETURNVOID() dummy; );
         BLOCK(E, CONST(Type::INT64, 1) dummy; );
         BLOCK(F, CONST(Type::INT64, 1) dummy; );
         BLOCK(G, CONST(Type::INT64, 1) dummy; );
@@ -23,7 +23,7 @@ namespace hw2_hw3_doms_and_loops {
         g1.FG();
         g1->BuildRPO();
         auto rpo = g1->GetRPO();
-        ASSERT(rpo.size() == 7U);
+        ASSERT(rpo.size() == 8U);
         ASSERT(rpo[0] == g1.A);
         ASSERT(rpo[1] == g1.B);
         ASSERT(rpo[2] == g1.F);
@@ -31,6 +31,7 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(rpo[4] == g1.E);
         ASSERT(rpo[5] == g1.C);
         ASSERT(rpo[6] == g1.D);
+        ASSERT(rpo[7] == g1->GetEndBlock());
 
         g1->BuildDomTree();
         ASSERT(g1->IDomOf(g1.A) == g1.A);
@@ -58,7 +59,7 @@ namespace hw2_hw3_doms_and_loops {
 
         g1->BuildLinearOrder();
         auto lo = g1->GetLinearOrder();
-        ASSERT(lo.size() == 8U);
+        ASSERT(lo.size() == 9U);
         ASSERT(lo[0].block == g1.A);
         ASSERT(lo[1].block == g1.B);
         ASSERT(lo[2].block == g1.C);
@@ -66,7 +67,8 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(lo[4].block == g1.E);
         ASSERT(lo[5].block == g1.G);
         ASSERT(lo[6].block == g1.D);
-        ASSERT(lo[7].block == nullptr);
+        ASSERT(lo[7].block == g1->GetEndBlock());
+        ASSERT(lo[8].block == nullptr);
         g1.BG();
     }
 
@@ -81,7 +83,7 @@ namespace hw2_hw3_doms_and_loops {
         BLOCK(H, CONST(Type::INT64, 1) dummy; );
         BLOCK(I, CONST(Type::INT64, 1) dummy; );
         BLOCK(J, CONST(Type::INT64, 1) dummy; );
-        BLOCK(K, CONST(Type::INT64, 1) dummy; );
+        BLOCK(K, RETURNVOID() dummy; );
         EDGES(
             A --> B --> (C, J);
             J --> C --> D --> (E, C);
@@ -98,7 +100,7 @@ namespace hw2_hw3_doms_and_loops {
 
         g2->BuildRPO();
         auto rpo = g2->GetRPO();
-        ASSERT(rpo.size() == 11U);
+        ASSERT(rpo.size() == 12U);
         ASSERT(rpo[0] == g2.A);
         ASSERT(rpo[1] == g2.B);
         ASSERT(rpo[2] == g2.J);
@@ -109,7 +111,8 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(rpo[7] == g2.G);
         ASSERT(rpo[8] == g2.I);
         ASSERT(rpo[9] == g2.K);
-        ASSERT(rpo[10] == g2.H);
+        ASSERT(rpo[10] == g2->GetEndBlock());
+        ASSERT(rpo[11] == g2.H);
 
         g2->BuildDomTree();
         ASSERT(g2->IDomOf(g2.A) == g2.A);
@@ -160,7 +163,7 @@ namespace hw2_hw3_doms_and_loops {
 
         g2->BuildLinearOrder();
         auto lo = g2->GetLinearOrder();
-        ASSERT(lo.size() == 12U);
+        ASSERT(lo.size() == 13U);
         ASSERT(lo[0].block == g2.A);
         ASSERT(lo[1].block == g2.B);
         ASSERT(lo[2].block == g2.J);
@@ -172,7 +175,9 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(lo[8].block == g2.H);
         ASSERT(lo[9].block == g2.I);
         ASSERT(lo[10].block == g2.K);
-        ASSERT(lo[11].block == nullptr);
+        ASSERT(lo[11].block == g2->GetEndBlock());
+        ASSERT(lo[12].block == nullptr);
+        
         g2.BG();
     }
     GRAPH(g3,
@@ -184,7 +189,7 @@ namespace hw2_hw3_doms_and_loops {
         BLOCK(F, CONST(Type::INT64, 1) dummy; );
         BLOCK(G, CONST(Type::INT64, 1) dummy; );
         BLOCK(H, CONST(Type::INT64, 1) dummy; );
-        BLOCK(I, CONST(Type::INT64, 1) dummy; );
+        BLOCK(I, RETURNVOID() dummy; );
         EDGES(
             A --> B --> (E, C);
             C --> D --> G --> (I, C);
@@ -199,7 +204,7 @@ namespace hw2_hw3_doms_and_loops {
         g3.FG();
         g3->BuildRPO();
         auto rpo = g3->GetRPO();
-        ASSERT(rpo.size() == 9U);
+        ASSERT(rpo.size() == 10U);
         ASSERT(rpo[0] == g3.A);
         ASSERT(rpo[1] == g3.B);
         ASSERT(rpo[2] == g3.E);
@@ -209,6 +214,7 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(rpo[6] == g3.C);
         ASSERT(rpo[7] == g3.D);
         ASSERT(rpo[8] == g3.I);
+        ASSERT(rpo[9] == g3->GetEndBlock());
 
         g3->BuildDomTree();
         ASSERT(g3->IDomOf(g3.A) == g3.A);
@@ -263,7 +269,7 @@ namespace hw2_hw3_doms_and_loops {
         
         g3->BuildLinearOrder();
         auto lo = g3->GetLinearOrder();
-        ASSERT(lo.size() == 10U);
+        ASSERT(lo.size() == 11U);
         ASSERT(lo[0].block == g3.A);
         ASSERT(lo[1].block == g3.B);
         ASSERT(lo[2].block == g3.E);
@@ -273,7 +279,8 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(lo[6].block == g3.C);
         ASSERT(lo[7].block == g3.D);
         ASSERT(lo[8].block == g3.I);
-        ASSERT(lo[9].block == nullptr);
+        ASSERT(lo[9].block == g3->GetEndBlock());
+        ASSERT(lo[10].block == nullptr);
 
         g3.BG();
     }
