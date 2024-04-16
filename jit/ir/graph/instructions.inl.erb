@@ -25,6 +25,12 @@ public:
     } 
 };
 
+template <>
+struct InstFromOpcodeImpl<Inst::<%= inst.opcode.upcase %>> {
+    using InstBase = <%= inst.opcode %>Inst;
+};
+
+
 inline auto Inst::As<%= inst.opcode %>()
 {
     return static_cast<<%= inst.opcode %>Inst *>(this);

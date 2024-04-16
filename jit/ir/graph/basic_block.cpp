@@ -3,6 +3,19 @@
 
 namespace compiler {
 
+bool BasicBlock::Dominates(const BasicBlock *other) const
+{
+    ASSERT(this != other);
+    while (other != nullptr) {
+        auto idom = GRAPH->IDomOf(other);
+        if (this == idom) {
+            return true;
+        }
+        other = idom;
+    }
+    return false;
+}
+
 bool BasicBlock::CheckValid() const
 {
     ASSERT((first_inst_ == nullptr) || (first_inst_ == nullptr));

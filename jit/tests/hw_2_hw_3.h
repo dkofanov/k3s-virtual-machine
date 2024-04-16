@@ -34,7 +34,7 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(rpo[7] == g1->GetEndBlock());
 
         g1->BuildDomTree();
-        ASSERT(g1->IDomOf(g1.A) == g1.A);
+        ASSERT(g1->IDomOf(g1.A) == nullptr);
         ASSERT(g1->IDomOf(g1.B) == g1.A);
         ASSERT(g1->IDomOf(g1.C) == g1.B);
         ASSERT(g1->IDomOf(g1.D) == g1.B);
@@ -115,7 +115,7 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(rpo[11] == g2.H);
 
         g2->BuildDomTree();
-        ASSERT(g2->IDomOf(g2.A) == g2.A);
+        ASSERT(g2->IDomOf(g2.A) == nullptr);
         ASSERT(g2->IDomOf(g2.B) == g2.A);
         ASSERT(g2->IDomOf(g2.C) == g2.B);
         ASSERT(g2->IDomOf(g2.D) == g2.C);
@@ -217,7 +217,7 @@ namespace hw2_hw3_doms_and_loops {
         ASSERT(rpo[9] == g3->GetEndBlock());
 
         g3->BuildDomTree();
-        ASSERT(g3->IDomOf(g3.A) == g3.A);
+        ASSERT(g3->IDomOf(g3.A) == nullptr);
         ASSERT(g3->IDomOf(g3.B) == g3.A);
         ASSERT(g3->IDomOf(g3.C) == g3.B);
         ASSERT(g3->IDomOf(g3.D) == g3.B);

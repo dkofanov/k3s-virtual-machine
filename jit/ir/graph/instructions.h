@@ -30,6 +30,7 @@ public:
         INT32,
         UINT64,
         UINT32,
+        ARRAY,
     };
 
     const auto *ToString() const
@@ -38,6 +39,7 @@ public:
         case Type::FLOAT64: return "FLOAT64";
         case Type::INT64: return "INT64";
         case Type::UINT64: return "UINT64";
+        case Type::ARRAY: return "ARRAY";
         default: UNREACHABLE();
         }
     }
@@ -53,7 +55,7 @@ public:
     {
         return type_;
     }
-    auto GetSizeInBits() const
+    size_t GetSizeInBits() const
     {
         switch (type_) {
             case Type::FLOAT64:
@@ -62,6 +64,8 @@ public:
                 return 64;
             case Type::INT32:
                 return 32;
+            case Type::ARRAY:
+                return sizeof(void *);
             default:
                 UNREACHABLE();
         }
@@ -385,6 +389,20 @@ public:
         return std::cout << " }";
     }
 
+    bool operator==(const FixedInputsInst<INPUTS_COUNT> &rhs)
+    {
+        if (opcode_ != rhs.opcode_) {
+            return false;
+        }
+        for (auto i = 0; i < INPUTS_COUNT; i++) {
+            // NOTE: direct pointer comparison:
+            if (inputs_[i] != rhs.inputs_[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 private:
     std::array<Inst*, INPUTS_COUNT> inputs_ {};
     std::array<User, INPUTS_COUNT + 1> users_ {};
@@ -502,6 +520,14 @@ private:
     std::vector<Inst *> inputs_ {};
     std::vector<User> users_ {};
 };
+
+template <Inst::Opcode OPC>
+struct InstFromOpcodeImpl {
+    using InstBase = std::nullptr_t;
+};
+
+template <Inst::Opcode OPC>
+using InstOpcode = typename InstFromOpcodeImpl<OPC>::InstBase;
 
 #include "gen/instructions.inl"
 

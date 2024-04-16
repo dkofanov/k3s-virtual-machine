@@ -4,6 +4,7 @@
 #include "hw_4_hw_1.h"
 #include "hw_5.h"
 #include "hw_6.h"
+#include "hw_8.h"
 #include "hw_7.h"
 
 #define CLR_PREF(v) "\033[1;" #v "m"
@@ -25,6 +26,7 @@ int main()
     RUN_TEST(hw5_linear_scan);
     RUN_TEST(hw6_peepholes);
     RUN_TEST(hw7_inlining);
+    RUN_TEST(hw8_checks_elim);
 
     return 0;
 }

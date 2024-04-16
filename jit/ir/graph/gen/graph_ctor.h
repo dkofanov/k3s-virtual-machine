@@ -397,6 +397,102 @@ __VA_ARGS__;                                \
     }
 
 
+#define CHECKNULL(...) CHECKNULL_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define CHECKNULL_INTERNAL(LINE, ...) CHECKNULL_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define CHECKNULL_INTERNAL_PASTE(LINE, ...) \
+    struct CheckNullInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        CheckNullInst_##LINE##_ctor (const CheckNullInst_##LINE##_ctor &) = delete;       \
+        CheckNullInst_##LINE##_ctor (CheckNullInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        CheckNullInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new CheckNullInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::CHECKNULL>(GRAPH, GRAPH->GetBlockById());             \
+        }                                                                                                   \
+        operator CheckNullInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        CheckNullInst *inst_ {};                                                                   \
+    }
+
+
+#define CHECKBOUNDS(...) CHECKBOUNDS_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define CHECKBOUNDS_INTERNAL(LINE, ...) CHECKBOUNDS_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define CHECKBOUNDS_INTERNAL_PASTE(LINE, ...) \
+    struct CheckBoundsInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        CheckBoundsInst_##LINE##_ctor (const CheckBoundsInst_##LINE##_ctor &) = delete;       \
+        CheckBoundsInst_##LINE##_ctor (CheckBoundsInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        CheckBoundsInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new CheckBoundsInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::CHECKBOUNDS>(GRAPH, GRAPH->GetBlockById());             \
+        }                                                                                                   \
+        operator CheckBoundsInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        CheckBoundsInst *inst_ {};                                                                   \
+    }
+
+
+#define GETELEM(...) GETELEM_INTERNAL(__LINE__, __VA_ARGS__)
+
+#define GETELEM_INTERNAL(LINE, ...) GETELEM_INTERNAL_PASTE(LINE, __VA_ARGS__)   
+
+#define GETELEM_INTERNAL_PASTE(LINE, ...) \
+    struct GetElemInst_##LINE##_ctor                                                             \
+    {                                                                                                       \
+        void AppendInst()                                                                                   \
+        {                                                                                                   \
+            auto inst = this->inst_;                                                                        \
+            GRAPH->GetBlockById()->PushBack(inst);                                                          \
+        }                                                                                                   \
+        GetElemInst_##LINE##_ctor (const GetElemInst_##LINE##_ctor &) = delete;       \
+        GetElemInst_##LINE##_ctor (GetElemInst_##LINE##_ctor &&) = delete;            \
+        /* init-list currently used only for inputs so `Inst *` should be enough */                         \
+        GetElemInst_##LINE##_ctor (std::initializer_list<Inst *> l)                              \
+        {                                                                                                   \
+            size_t i = 0;                                                                                   \
+            inst_ = new GetElemInst (__VA_ARGS__);                                               \
+            for (auto input : l) {                                                                          \
+                inst_->SetInput(i, input);                                                                  \
+                i++;                                                                                        \
+            }                                                                                               \
+            AppendInst();                                                                                   \
+            GraphInternalsFixup<Inst::GETELEM>(GRAPH, GRAPH->GetBlockById());             \
+        }                                                                                                   \
+        operator GetElemInst*() { return inst_; }                                                \
+        auto *operator->() { return inst_; }                                               \
+        GetElemInst *inst_ {};                                                                   \
+    }
+
+
 #define ADD(...) ADD_INTERNAL(__LINE__, __VA_ARGS__)
 
 #define ADD_INTERNAL(LINE, ...) ADD_INTERNAL_PASTE(LINE, __VA_ARGS__)   

@@ -8,6 +8,9 @@ public:
         CALL,
         RETURN,
         RETURNVOID,
+        CHECKNULL,
+        CHECKBOUNDS,
+        GETELEM,
         ADD,
         SUB,
         MUL,
@@ -63,6 +66,15 @@ public:
     bool IsReturnVoid() const { return opcode_ == RETURNVOID; }
     auto AsReturnVoid() const;
     auto AsReturnVoid();
+    bool IsCheckNull() const { return opcode_ == CHECKNULL; }
+    auto AsCheckNull() const;
+    auto AsCheckNull();
+    bool IsCheckBounds() const { return opcode_ == CHECKBOUNDS; }
+    auto AsCheckBounds() const;
+    auto AsCheckBounds();
+    bool IsGetElem() const { return opcode_ == GETELEM; }
+    auto AsGetElem() const;
+    auto AsGetElem();
     bool IsAdd() const { return opcode_ == ADD; }
     auto AsAdd() const;
     auto AsAdd();
@@ -152,6 +164,7 @@ public:
     auto BB() { return bb_; }
     size_t GetBBId();
     void SetBB(BasicBlock *bb) { bb_ = bb; }
+    bool Dominates(const Inst *other) const;
 
     bool HasUsers()
     {
@@ -192,10 +205,10 @@ private:
     static constexpr uint8_t INPUTS_COUNT_ARRAY[] =
     {
         (uint8_t) -1,
- (uint8_t) 0,  (uint8_t) 0,  (uint8_t) 1,  (uint8_t) -1,  (uint8_t) 1,  (uint8_t) 0,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 1,  (uint8_t) 1,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) -1,  (uint8_t) 2,     
+ (uint8_t) 0,  (uint8_t) 0,  (uint8_t) 1,  (uint8_t) -1,  (uint8_t) 1,  (uint8_t) 0,  (uint8_t) 1,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 1,  (uint8_t) 1,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) 2,  (uint8_t) -1,  (uint8_t) 2,     
     };
 
-private:
+protected:
     Opcode opcode_{};
     uint32_t id_{};
     uint32_t ln_{};
@@ -206,3 +219,5 @@ private:
 
 friend class User;
 };
+
+using Opcode = Inst::Opcode;

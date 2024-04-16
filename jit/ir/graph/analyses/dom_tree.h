@@ -34,7 +34,7 @@ private:
             // There are unreachable blocks.
             UNREACHABLE();
         }
-        ASSERT(v_numbers_[graph_->GetEntryBlock()->Id()] == 1);
+        ASSERT(v_numbers_[Graph::ENTRY_BLOCK_IDX] == 1);
     }
 
     void DFS(BasicBlock *bb, size_t *idx)
@@ -121,10 +121,10 @@ private:
 
     void CollectIdoms()
     {
-        idoms_[graph_->GetEntryBlock()->Id()] = graph_->GetEntryBlock();
+        idoms_[Graph::ENTRY_BLOCK_IDX] = nullptr;
         for (auto bb_it = sorted_.rbegin() + 1; bb_it != sorted_.rend(); ++bb_it) {
             auto bb = *bb_it;
-            ASSERT(bb->Id() != graph_->GetEntryBlock()->Id());
+            ASSERT(bb->Id() != Graph::ENTRY_BLOCK_IDX);
             auto *semidom = semidoms_[bb->Id()];
             ASSERT(semidom != nullptr);
             size_t u = bb->Id();
@@ -134,7 +134,7 @@ private:
                 if (NumOf(semidoms_[u]) < NumOf(semidoms_[u_min])) {
                     u_min = u;
                 }
-                ASSERT(u != graph_->GetEntryBlock()->Id());
+                ASSERT(u != Graph::ENTRY_BLOCK_IDX);
                 u = spanning_tree_imm_anc_[u];
             }
             if (NumOf(semidoms_[u_min]) == NumOf(semidoms_[bb->Id()])) {

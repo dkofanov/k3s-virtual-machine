@@ -8,6 +8,7 @@
 #include "analyses/reg_alloc.h"
 #include "optimizations/peepholes.h"
 #include "optimizations/inlining.h"
+#include "optimizations/checks_elimination.h"
 #include <cstddef>
 
 namespace compiler {
@@ -231,6 +232,11 @@ void Graph::AllocateRegisters()
 void Graph::ApplyPeepholes()
 {
     Peepholes(this);
+}
+
+void Graph::ApplyChecksElimination()
+{
+    ChecksElimination(this);
 }
 
 void Graph::ApplyInlining(size_t depth)

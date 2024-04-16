@@ -12,15 +12,25 @@ class BasicBlock : public Marker
 public:
     static constexpr size_t TRUE_SUCC_IDX = 0;
     static constexpr size_t FALSE_SUCC_IDX = 1;
+    
+    static constexpr size_t ENTRY_BLOCK_IDX = 1;
+    static constexpr size_t END_BLOCK_IDX = 0;
 
     BasicBlock();
     BasicBlock(Graph *g);
+
+    bool Dominates(const BasicBlock *other) const;
 
     void SetId(size_t id)
     {
         id_ = id;
     }
     auto Id() const { return id_; }
+
+    auto IsEntryBlock()
+    {
+        return id_ == ENTRY_BLOCK_IDX;
+    }
 
     void SetTrueFalseSuccs(BasicBlock *t_succ, BasicBlock *f_succ)
     {

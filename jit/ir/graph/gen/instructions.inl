@@ -24,6 +24,12 @@ public:
     } 
 };
 
+template <>
+struct InstFromOpcodeImpl<Inst::CONST> {
+    using InstBase = ConstInst;
+};
+
+
 inline auto Inst::AsConst()
 {
     return static_cast<ConstInst *>(this);
@@ -57,6 +63,12 @@ public:
         return std::cout;
     } 
 };
+
+template <>
+struct InstFromOpcodeImpl<Inst::PARAMETER> {
+    using InstBase = ParameterInst;
+};
+
 
 inline auto Inst::AsParameter()
 {
@@ -92,6 +104,12 @@ public:
     } 
 };
 
+template <>
+struct InstFromOpcodeImpl<Inst::CAST> {
+    using InstBase = CastInst;
+};
+
+
 inline auto Inst::AsCast()
 {
     return static_cast<CastInst *>(this);
@@ -125,6 +143,12 @@ public:
         return std::cout;
     } 
 };
+
+template <>
+struct InstFromOpcodeImpl<Inst::CALL> {
+    using InstBase = CallInst;
+};
+
 
 inline auto Inst::AsCall()
 {
@@ -160,6 +184,12 @@ public:
     } 
 };
 
+template <>
+struct InstFromOpcodeImpl<Inst::RETURN> {
+    using InstBase = ReturnInst;
+};
+
+
 inline auto Inst::AsReturn()
 {
     return static_cast<ReturnInst *>(this);
@@ -194,6 +224,12 @@ public:
     } 
 };
 
+template <>
+struct InstFromOpcodeImpl<Inst::RETURNVOID> {
+    using InstBase = ReturnVoidInst;
+};
+
+
 inline auto Inst::AsReturnVoid()
 {
     return static_cast<ReturnVoidInst *>(this);
@@ -202,6 +238,126 @@ inline auto Inst::AsReturnVoid()
 inline auto Inst::AsReturnVoid() const
 {
     return static_cast<const ReturnVoidInst *>(this);
+}
+class CheckNullInst : public FixedInputsInst<1>, public ImplicitlyTypedMixin
+{
+public:
+    
+    CheckNullInst()
+    : FixedInputsInst<1>(Opcode::CHECKNULL)
+    {}
+
+    template <bool DUMP_LIVENESS = false>
+    auto &Dump() 
+    {
+        std::ios state(nullptr);
+        state.copyfmt(std::cout);
+        
+        std::cout <<  "        " << std::setw(20) << std::left <<  "CHECKNULL" << std::setw(0) << "(" ;
+        ImplicitlyTypedMixin::Dump(); 
+        std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
+        DumpDF();
+        std::cout.copyfmt(state);
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
+    } 
+};
+
+template <>
+struct InstFromOpcodeImpl<Inst::CHECKNULL> {
+    using InstBase = CheckNullInst;
+};
+
+
+inline auto Inst::AsCheckNull()
+{
+    return static_cast<CheckNullInst *>(this);
+}
+
+inline auto Inst::AsCheckNull() const
+{
+    return static_cast<const CheckNullInst *>(this);
+}
+class CheckBoundsInst : public FixedInputsInst<2>, public ImplicitlyTypedMixin
+{
+public:
+    
+    CheckBoundsInst()
+    : FixedInputsInst<2>(Opcode::CHECKBOUNDS)
+    {}
+
+    template <bool DUMP_LIVENESS = false>
+    auto &Dump() 
+    {
+        std::ios state(nullptr);
+        state.copyfmt(std::cout);
+        
+        std::cout <<  "        " << std::setw(20) << std::left <<  "CHECKBOUNDS" << std::setw(0) << "(" ;
+        ImplicitlyTypedMixin::Dump(); 
+        std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
+        DumpDF();
+        std::cout.copyfmt(state);
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
+    } 
+};
+
+template <>
+struct InstFromOpcodeImpl<Inst::CHECKBOUNDS> {
+    using InstBase = CheckBoundsInst;
+};
+
+
+inline auto Inst::AsCheckBounds()
+{
+    return static_cast<CheckBoundsInst *>(this);
+}
+
+inline auto Inst::AsCheckBounds() const
+{
+    return static_cast<const CheckBoundsInst *>(this);
+}
+class GetElemInst : public FixedInputsInst<2>, public TypedMixin
+{
+public:
+    template <typename Arg_Typed>
+    GetElemInst(Arg_Typed &&arg_Typed)
+    : FixedInputsInst<2>(Opcode::GETELEM), TypedMixin(arg_Typed)
+    {}
+
+    template <bool DUMP_LIVENESS = false>
+    auto &Dump() 
+    {
+        std::ios state(nullptr);
+        state.copyfmt(std::cout);
+        
+        std::cout <<  "        " << std::setw(20) << std::left <<  "GETELEM" << std::setw(0) << "(" ;
+        TypedMixin::Dump(); 
+        std::cout << ")" << std::setw(15) << std::right << " v" << Id() << std::setw(0);
+        DumpDF();
+        std::cout.copyfmt(state);
+        std::cout << ";  // LN = " << LN() << '\n';
+
+        return std::cout;
+    } 
+};
+
+template <>
+struct InstFromOpcodeImpl<Inst::GETELEM> {
+    using InstBase = GetElemInst;
+};
+
+
+inline auto Inst::AsGetElem()
+{
+    return static_cast<GetElemInst *>(this);
+}
+
+inline auto Inst::AsGetElem() const
+{
+    return static_cast<const GetElemInst *>(this);
 }
 class AddInst : public FixedInputsInst<2>, public ImplicitlyTypedMixin
 {
@@ -227,6 +383,12 @@ public:
         return std::cout;
     } 
 };
+
+template <>
+struct InstFromOpcodeImpl<Inst::ADD> {
+    using InstBase = AddInst;
+};
+
 
 inline auto Inst::AsAdd()
 {
@@ -262,6 +424,12 @@ public:
     } 
 };
 
+template <>
+struct InstFromOpcodeImpl<Inst::SUB> {
+    using InstBase = SubInst;
+};
+
+
 inline auto Inst::AsSub()
 {
     return static_cast<SubInst *>(this);
@@ -295,6 +463,12 @@ public:
         return std::cout;
     } 
 };
+
+template <>
+struct InstFromOpcodeImpl<Inst::MUL> {
+    using InstBase = MulInst;
+};
+
 
 inline auto Inst::AsMul()
 {
@@ -330,6 +504,12 @@ public:
     } 
 };
 
+template <>
+struct InstFromOpcodeImpl<Inst::NEG> {
+    using InstBase = NegInst;
+};
+
+
 inline auto Inst::AsNeg()
 {
     return static_cast<NegInst *>(this);
@@ -363,6 +543,12 @@ public:
         return std::cout;
     } 
 };
+
+template <>
+struct InstFromOpcodeImpl<Inst::NOT> {
+    using InstBase = NotInst;
+};
+
 
 inline auto Inst::AsNot()
 {
@@ -398,6 +584,12 @@ public:
     } 
 };
 
+template <>
+struct InstFromOpcodeImpl<Inst::XOR> {
+    using InstBase = XorInst;
+};
+
+
 inline auto Inst::AsXor()
 {
     return static_cast<XorInst *>(this);
@@ -431,6 +623,12 @@ public:
         return std::cout;
     } 
 };
+
+template <>
+struct InstFromOpcodeImpl<Inst::ASHR> {
+    using InstBase = AshrInst;
+};
+
 
 inline auto Inst::AsAshr()
 {
@@ -466,6 +664,12 @@ public:
     } 
 };
 
+template <>
+struct InstFromOpcodeImpl<Inst::SHL> {
+    using InstBase = ShlInst;
+};
+
+
 inline auto Inst::AsShl()
 {
     return static_cast<ShlInst *>(this);
@@ -499,6 +703,12 @@ public:
         return std::cout;
     } 
 };
+
+template <>
+struct InstFromOpcodeImpl<Inst::PHI> {
+    using InstBase = PhiInst;
+};
+
 
 inline auto Inst::AsPhi()
 {
@@ -534,6 +744,12 @@ public:
     } 
 };
 
+template <>
+struct InstFromOpcodeImpl<Inst::JMP> {
+    using InstBase = JmpInst;
+};
+
+
 inline auto Inst::AsJmp()
 {
     return static_cast<JmpInst *>(this);
@@ -554,6 +770,9 @@ inline void Inst::Dump()
     case CALL: AsCall()->Dump<DUMP_LIVENESS>(); break;
     case RETURN: AsReturn()->Dump<DUMP_LIVENESS>(); break;
     case RETURNVOID: AsReturnVoid()->Dump<DUMP_LIVENESS>(); break;
+    case CHECKNULL: AsCheckNull()->Dump<DUMP_LIVENESS>(); break;
+    case CHECKBOUNDS: AsCheckBounds()->Dump<DUMP_LIVENESS>(); break;
+    case GETELEM: AsGetElem()->Dump<DUMP_LIVENESS>(); break;
     case ADD: AsAdd()->Dump<DUMP_LIVENESS>(); break;
     case SUB: AsSub()->Dump<DUMP_LIVENESS>(); break;
     case MUL: AsMul()->Dump<DUMP_LIVENESS>(); break;
@@ -600,6 +819,21 @@ inline void Inst::SetInput(size_t i, Inst *inst)
     case RETURNVOID:
     {
         AsReturnVoid()->SetInput<NEED_UPDATE_USER>(i, inst);
+        return;
+    }
+    case CHECKNULL:
+    {
+        AsCheckNull()->SetInput<NEED_UPDATE_USER>(i, inst);
+        return;
+    }
+    case CHECKBOUNDS:
+    {
+        AsCheckBounds()->SetInput<NEED_UPDATE_USER>(i, inst);
+        return;
+    }
+    case GETELEM:
+    {
+        AsGetElem()->SetInput<NEED_UPDATE_USER>(i, inst);
         return;
     }
     case ADD:
@@ -666,6 +900,9 @@ inline Inst *Inst::GetInput(size_t i)
     case CALL: return AsCall()->GetInput(i);
     case RETURN: return AsReturn()->GetInput(i);
     case RETURNVOID: return AsReturnVoid()->GetInput(i);
+    case CHECKNULL: return AsCheckNull()->GetInput(i);
+    case CHECKBOUNDS: return AsCheckBounds()->GetInput(i);
+    case GETELEM: return AsGetElem()->GetInput(i);
     case ADD: return AsAdd()->GetInput(i);
     case SUB: return AsSub()->GetInput(i);
     case MUL: return AsMul()->GetInput(i);
@@ -689,6 +926,9 @@ inline User *Inst::GetUserPointee(size_t i)
     case CALL: return AsCall()->GetUserPointee(i);
     case RETURN: return AsReturn()->GetUserPointee(i);
     case RETURNVOID: return AsReturnVoid()->GetUserPointee(i);
+    case CHECKNULL: return AsCheckNull()->GetUserPointee(i);
+    case CHECKBOUNDS: return AsCheckBounds()->GetUserPointee(i);
+    case GETELEM: return AsGetElem()->GetUserPointee(i);
     case ADD: return AsAdd()->GetUserPointee(i);
     case SUB: return AsSub()->GetUserPointee(i);
     case MUL: return AsMul()->GetUserPointee(i);
@@ -712,6 +952,9 @@ inline Span<Inst *> Inst::GetInputs()
     case CALL: return AsCall()->GetInputs();
     case RETURN: return AsReturn()->GetInputs();
     case RETURNVOID: return AsReturnVoid()->GetInputs();
+    case CHECKNULL: return AsCheckNull()->GetInputs();
+    case CHECKBOUNDS: return AsCheckBounds()->GetInputs();
+    case GETELEM: return AsGetElem()->GetInputs();
     case ADD: return AsAdd()->GetInputs();
     case SUB: return AsSub()->GetInputs();
     case MUL: return AsMul()->GetInputs();

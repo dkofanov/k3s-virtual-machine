@@ -1,12 +1,9 @@
 instructions:
-
-  
   - opcode: Const
     argc: 0
     mixins:
     - Typed
     - Immediate
-  
 
   - opcode: Parameter
     argc: 0
@@ -31,6 +28,18 @@ instructions:
     argc: 0
     props:
     - no_dst
+
+# Types:
+  - opcode: CheckNull
+    argc: 1
+
+  - opcode: CheckBounds
+    argc: 2
+
+  - opcode: GetElem
+    argc: 2
+    mixins:
+    - Typed
 
 # Artithmetics:
   - opcode: Add

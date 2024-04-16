@@ -24,8 +24,8 @@ struct Location {
 
 class Graph {
 public:
-    static constexpr size_t ENTRY_BLOCK_IDX = 1;
-    static constexpr size_t END_BLOCK_IDX = 0;
+    static constexpr size_t ENTRY_BLOCK_IDX = BasicBlock::ENTRY_BLOCK_IDX;
+    static constexpr size_t END_BLOCK_IDX = BasicBlock::END_BLOCK_IDX;
 
     Graph(bool reset_ids)
     : blocks_id_offset_(reset_ids ? 0 : BLOCK_ID_)
@@ -183,6 +183,8 @@ public:
     void AllocateRegisters();
 
     void ApplyPeepholes();
+    
+    void ApplyChecksElimination();
 
     void ApplyInlining(size_t depth = 0);
     // TODO: rework when IRBuilder is implemented:

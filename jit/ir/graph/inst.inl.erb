@@ -98,6 +98,7 @@ public:
     auto BB() { return bb_; }
     size_t GetBBId();
     void SetBB(BasicBlock *bb) { bb_ = bb; }
+    bool Dominates(const Inst *other) const;
 
     bool HasUsers()
     {
@@ -147,7 +148,7 @@ private:
     
     };
 
-private:
+protected:
     Opcode opcode_{};
     uint32_t id_{};
     uint32_t ln_{};
@@ -158,3 +159,5 @@ private:
 
 friend class User;
 };
+
+using Opcode = Inst::Opcode;
